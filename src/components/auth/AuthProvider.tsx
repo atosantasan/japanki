@@ -200,6 +200,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await refreshProfile();
   }, [configured, refreshProfile]);
 
+  const openLinkModal = useCallback(
+    (reason: LinkModalReason = "save") => {
+      setAuthError(null);
+      setEmailSent(false);
+      setLinkModalReason(reason);
+      setLinkModalOpen(true);
+    },
+    [],
+  );
+
+  const closeLinkModal = useCallback(() => setLinkModalOpen(false), []);
+
+  const clearAuthError = useCallback(() => setAuthError(null), []);
+
+  const updateHearts = useCallback(
+    (hearts: number, lastHeartUpdatedAt: string) => {
+      setProfile((current) =>
+        current ? { ...current, hearts, lastHeartUpdatedAt } : current,
+      );
+    },
+    [],
+  );
+
   const value = useMemo<AuthContextValue>(
     () => ({
       configured,
@@ -209,26 +232,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       authError,
       linkModalOpen,
       linkModalReason,
-      openLinkModal: (reason = "save") => {
-        setLinkModalReason(reason);
-        setLinkModalOpen(true);
-      },
-      closeLinkModal: () => setLinkModalOpen(false),
-      clearAuthError: () => setAuthError(null),
+      openLinkModal,
+      closeLinkModal,
+      clearAuthError,
       continueWithGoogle,
       continueWithEmail,
       signOut,
       refreshProfile,
-      updateHearts: (hearts, lastHeartUpdatedAt) => {
-        setProfile((current) =>
-          current
-            ? { ...current, hearts, lastHeartUpdatedAt }
-            : current,
-        );
-      },
+      updateHearts,
     }),
     [
       authError,
+      clearAuthError,
+      closeLinkModal,
       configured,
       continueWithEmail,
       continueWithGoogle,
@@ -236,9 +252,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       linkModalOpen,
       linkModalReason,
       loading,
+      openLinkModal,
       profile,
       refreshProfile,
       signOut,
+      updateHearts,
     ],
   );
 

@@ -74,12 +74,6 @@ export function QuizPlay({ packId }: QuizPlayProps) {
           return;
         }
         setHearts(synced?.hearts ?? 5);
-        if (synced) {
-          updateHearts(
-            synced.hearts,
-            synced.lastHeartUpdatedAt ?? new Date().toISOString(),
-          );
-        }
 
         const session = await createQuizSession(rpcClient, packId);
         const phrasesResponse = await fetch(
@@ -147,7 +141,7 @@ export function QuizPlay({ packId }: QuizPlayProps) {
     return () => {
       cancelled = true;
     };
-  }, [authLoading, locale, packId, refreshProfile, updateHearts]);
+  }, [authLoading, locale, packId, refreshProfile]);
 
   const currentId = current?.phrase.id ?? null;
   if (currentId !== trackedAudioId) {
