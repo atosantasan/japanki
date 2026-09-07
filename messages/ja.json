@@ -1,0 +1,196 @@
+{
+  "Metadata": {
+    "title": "Japanki",
+    "description": "1分で日本語を学ぶ — 耳で解く5問。"
+  },
+  "HomePage": {
+    "title": "Japanki",
+    "tagline": "1分。5問。耳で覚える日本語。",
+    "sessionHint": "1セッション = 5問 ≒ 1分",
+    "cta": "学習を始める",
+    "contact": "お問い合わせ",
+    "travelCta": "トラベルパック",
+    "buyTravel": "トラベルパックを購入"
+  },
+  "Auth": {
+    "guest": "ゲスト",
+    "saveProgress": "進捗を保存",
+    "continueGoogle": "Googleで続ける",
+    "continueEmail": "メールでこのゲストセッションを引き継ぐ",
+    "emailPlaceholder": "you@example.com",
+    "sendLink": "ログインリンクを送る",
+    "signOut": "サインアウト",
+    "emailSent": "受信トレイのログインリンクを確認してください。",
+    "collisionTitle": "このアカウントはすでに使用されています",
+    "collisionBody": "そのGoogleまたはメールの認証情報は、別のJapankiアカウントにすでに紐づいています。既存アカウントでサインインしてください。ゲストの進捗は統合されません。",
+    "useExisting": "既存アカウントでサインイン",
+    "stayGuest": "ゲストのまま続ける",
+    "genericError": "エラーが発生しました。もう一度お試しください。",
+    "linked": "保存しました",
+    "checkoutGuard": "このパックを購入するにはアカウントを連携してください"
+  },
+  "Quiz": {
+    "loading": "5問を準備しています…",
+    "question": "問題 {current} / 5",
+    "playAudio": "再生",
+    "correct": "正解",
+    "incorrect": "不正解",
+    "next": "次へ",
+    "complete": "1分完了！",
+    "home": "ホームへ戻る",
+    "paidLocked": "このパックは購入が必要です。",
+    "startError": "このパックを開始できませんでした。",
+    "heartsEmpty": "ハートがありません。時間とともに回復します。",
+    "notConfigured": "Supabaseがまだ設定されていません。",
+    "audioFallback": "フレーズ音声がまだないため、Japankiは生成したトーンを再生しています。"
+  },
+  "Hearts": {
+    "label": "ハート",
+    "nextIn": "次の回復まで {time}",
+    "full": "満タン"
+  },
+  "Success": {
+    "title": "決済を受け付けました",
+    "body": "Stripeが購入を確認しています。トラベルパックはWebhook検証後に解除されます。この成功ページを開いただけでは権限は付与されません。",
+    "cta": "トラベルパックを開く",
+    "accountCta": "購入履歴を見る"
+  },
+  "Account": {
+    "title": "購入履歴",
+    "subtitle": "解除済みパックを確認できます。領収書と支払い方法はStripeカスタマーポータルで管理します。",
+    "empty": "有料パックはまだありません。サバイバルは無料です。トラベルはStripeの支払い確認後に解除されます。",
+    "purchasedAt": "購入日 {date}",
+    "manageBilling": "お支払い管理",
+    "signInRequired": "購入履歴と請求を見るにはアカウントを連携してください。",
+    "noCustomer": "このメールのStripe顧客が見つかりませんでした。先に購入を完了してください。",
+    "error": "請求情報を読み込めませんでした。",
+    "openPack": "パックを開く"
+  },
+  "Legal": {
+    "termsNav": "利用規約",
+    "privacyNav": "プライバシー",
+    "tokushoNav": "特定商取引法",
+    "accountNav": "購入履歴",
+    "updated": "最終更新: 2026年9月",
+    "terms": {
+      "title": "利用規約",
+      "intro": "本利用規約（以下「本規約」）は、日本語学習PWAであるJapankiの利用に適用されます。本サービスを利用することで、本規約に同意したものとみなします。お問い合わせ: japankiadm@gmail.com。",
+      "apply": {
+        "title": "1. 適用範囲",
+        "body": "本規約は、ゲスト（匿名）セッション、Googleまたはメールアカウントの連携、クイズ、ハート、有料コンテンツパックを含む、Japankiのあらゆる利用に適用されます。"
+      },
+      "registration": {
+        "title": "2. アカウント",
+        "body": "ゲストとして開始し、その後Googleまたはメールを連携できます。連携しても既存の2つのアカウントは統合されません。虚偽の情報、不正利用、本規約違反がある場合、アクセスを拒否または取り消すことがあります。"
+      },
+      "fees": {
+        "title": "3. 料金と支払い",
+        "body": "サバイバルパックは無料です。トラベルパックは一括払いのデジタルパックです（チェックアウト時に別表示がない限りUSD 2.99）。支払いはStripeが処理します。カード番号は保存しません。アクセスは成功ページの表示ではなく、Stripe Webhookの検証後にのみ付与されます。デジタルコンテンツは、法令で義務付けられる場合または当社の責に帰すべき事由を除き、原則として返金できません。"
+      },
+      "prohibited": {
+        "title": "4. 禁止事項",
+        "body": "法令違反、本サービスの攻撃やスクレイピング、リバースエンジニアリング、ハート・セッション・購入の不正操作、なりすまし、他の学習者を害する利用をしてはなりません。"
+      },
+      "interruption": {
+        "title": "5. 中断",
+        "body": "保守、セキュリティ、不可抗力、その他運営が困難な事由がある場合、事前通知の有無を問わずサービスを停止することがあります。"
+      },
+      "copyright": {
+        "title": "6. 知的財産",
+        "body": "Japankiのフレーズ、デザイン、ソフトウェア、ブランドは運営者に帰属します。アプリの利用によってコンテンツの所有権が利用者に移転することはありません。"
+      },
+      "disclaimer": {
+        "title": "7. 免責",
+        "body": "Japankiは軽量な学習補助です。流暢さ、発音、旅行成果を保証しません。フレーズ音声ファイルがない場合、Web Audioのトーンが再生されることがあります。法令で制限が禁じられる場合を除き、端末、ネットワーク、第三者（Supabase、Stripe、Vercel、Google）の障害について責任を負いません。"
+      },
+      "changes": {
+        "title": "8. 変更",
+        "body": "機能の変更または終了を行うことがあります。更新後も利用を続ける場合、改定後の規約に同意したものとみなします。"
+      },
+      "governing": {
+        "title": "9. 準拠法",
+        "body": "本規約は日本法に準拠します。紛争が解決できない場合、強行法規たる消費者法に別段の定めがあるときを除き、日本の裁判所が管轄します。"
+      },
+      "contact": {
+        "title": "10. お問い合わせ",
+        "body": "本規約に関するお問い合わせ: japankiadm@gmail.com。"
+      }
+    },
+    "privacy": {
+      "title": "プライバシーポリシー",
+      "intro": "本プライバシーポリシーは、Japankiが個人データをどのように取り扱うかを説明します。お問い合わせ: japankiadm@gmail.com。",
+      "collect": {
+        "title": "1. 収集する情報",
+        "body": "アカウントを連携した場合、メールアドレスと認証識別子を収集します。クイズのハート、言語設定、購入記録（ユーザーIDとパックID）も保存します。カードデータはStripeが扱い、当社はカード番号を保存しません。ブラウザから端末種別などの技術情報が送信されることがあります。"
+      },
+      "purpose": {
+        "title": "2. 利用目的",
+        "body": "認証、ハート、Webhook検証後の有料パック解除、サポート、セキュリティ、サービス改善のため、Japankiの運営にこの情報を使用します。"
+      },
+      "sharing": {
+        "title": "3. 共有",
+        "body": "個人データを販売しません。本人の同意がある場合、法令で求められる場合、またはサービス運営を助ける処理者との間でのみ共有します。"
+      },
+      "processors": {
+        "title": "4. 処理者",
+        "body": "Supabase（認証とデータベース）、Stripe（決済とカスタマーポータル）、Vercel（ホスティング）、Google（Googleサインインを選んだ場合のOAuth）。各社は独自のプライバシーポリシーに従います。Japankiはクイズ内容を生成AI APIに送信しません。"
+      },
+      "retention": {
+        "title": "5. 保管",
+        "body": "データは暗号化通信を用いる処理者のもとで保管します。Row Level Securityにより、ユーザーは自身のプロフィールと購入情報にのみアクセスできます。"
+      },
+      "deletion": {
+        "title": "6. 削除",
+        "body": "アカウントと関連データの削除は japankiadm@gmail.com へメールしてください。法令または不正防止のため保持が必要な場合を除き、記録を削除または匿名化します。"
+      },
+      "children": {
+        "title": "7. 子ども",
+        "body": "Japankiは13歳未満（またはお住まいの地域でより高い年齢が求められる場合はその年齢未満）の子どもを対象としていません。子どもが登録したと思われる場合はご連絡ください。"
+      },
+      "changes": {
+        "title": "8. 変更",
+        "body": "本ポリシーを更新することがあります。上部の日付が変わります。更新後も利用を続ける場合、承諾したものとみなします。"
+      },
+      "contact": {
+        "title": "9. お問い合わせ",
+        "body": "プライバシーに関する請求: japankiadm@gmail.com。"
+      }
+    },
+    "tokusho": {
+      "title": "特定商取引法に基づく表記",
+      "intro": "本表記は、Japankiで販売するデジタルコンテンツについて、特定商取引法に基づき提供します。",
+      "disclosureTitle": "請求による開示",
+      "disclosureBody": "氏名、住所、電話番号は、japankiadm@gmail.com へメールいただければ遅滞なく開示します。",
+      "labelSeller": "販売業者",
+      "valueSeller": "請求があれば遅滞なく開示します",
+      "labelOperator": "運営責任者",
+      "valueOperator": "請求があれば遅滞なく開示します",
+      "labelAddress": "所在地",
+      "valueAddress": "請求があれば遅滞なく開示します",
+      "labelPhone": "電話番号",
+      "valuePhone": "請求があれば遅滞なく開示します",
+      "labelEmail": "メールアドレス",
+      "valueEmail": "japankiadm@gmail.com",
+      "labelServiceName": "サービス名",
+      "valueServiceName": "Japanki",
+      "labelServiceUrl": "サービスURL",
+      "valueServiceUrl": "ご覧になっているJapankiのウェブサイト",
+      "labelPrice": "販売価格",
+      "valuePrice": "トラベルパック: USD 2.99（一括）。サバイバルパック: 無料。",
+      "labelExtraFees": "販売価格以外に必要な費用",
+      "valueExtraFees": "なし。インターネット／モバイル通信料金は利用者負担です。",
+      "labelPaymentMethod": "支払方法",
+      "valuePaymentMethod": "クレジットカード（Visa、Mastercard、American Express、JCBほか）をStripe経由で決済",
+      "labelPaymentTiming": "支払時期",
+      "valuePaymentTiming": "チェックアウト時（一括払い、自動更新なし）",
+      "labelDelivery": "引渡時期",
+      "valueDelivery": "Stripe Webhook確認後ただちに",
+      "labelCancel": "キャンセル",
+      "valueCancel": "デジタルコンテンツは、法令で義務付けられる場合または当社の責に帰すべき事由を除き、原則として返金できません。",
+      "labelRefund": "返金",
+      "valueRefund": "原則として返金しません。運営者の過失または法令上の要件がある場合は例外とします。",
+      "labelEnvironment": "動作環境",
+      "valueEnvironment": "iOS Safari、Android Chrome、デスクトップブラウザ、およびPWA（ホーム画面に追加）"
+    }
+  }
+}

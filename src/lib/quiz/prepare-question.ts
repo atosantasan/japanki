@@ -1,4 +1,5 @@
 import type { SupportedLocale } from "@/lib/i18n/locales";
+import { toContentLocale } from "@/lib/i18n/locales";
 import { shuffleChoices, type RandomFn } from "@/lib/quiz/shuffle-choices";
 import type { PhraseRecord } from "@/lib/validation/translation-schema";
 
@@ -14,7 +15,8 @@ export function prepareQuestion(
   locale: SupportedLocale,
   random: RandomFn = Math.random,
 ): PreparedQuestion {
-  const choices = phrase.choices_by_lang[locale];
+  const contentLocale = toContentLocale(locale);
+  const choices = phrase.choices_by_lang[contentLocale];
   const shuffled = shuffleChoices(
     choices,
     phrase.correct_choice_index,
@@ -23,7 +25,7 @@ export function prepareQuestion(
 
   return {
     phrase,
-    prompt: phrase.translations[locale],
+    prompt: phrase.translations[contentLocale],
     choices: shuffled.choices,
     correctIndex: shuffled.correctIndex,
   };

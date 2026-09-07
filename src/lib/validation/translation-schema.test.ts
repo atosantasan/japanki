@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { SUPPORTED_LOCALES } from "@/lib/i18n/locales";
+import { CONTENT_LOCALES, SUPPORTED_LOCALES } from "@/lib/i18n/locales";
 import {
   AppMessagesSchema,
   ChoicesByLangSchema,
@@ -37,7 +37,7 @@ const completeChoices = {
 describe("TranslationSchema", () => {
   it("accepts dictionaries that include all 8 locales", () => {
     const parsed = TranslationSchema.parse(completeTranslations);
-    expect(Object.keys(parsed)).toEqual([...SUPPORTED_LOCALES]);
+    expect(Object.keys(parsed)).toEqual([...CONTENT_LOCALES]);
   });
 
   it("rejects dictionaries that are missing a locale key", () => {
@@ -80,7 +80,7 @@ describe("PhraseContentSchema", () => {
 });
 
 describe("AppMessagesSchema", () => {
-  it("validates all 8 locale message files including legal copy", () => {
+  it("validates all locale message files including legal copy", () => {
     for (const locale of SUPPORTED_LOCALES) {
       const filePath = join(rootDir, "messages", `${locale}.json`);
       const messages = JSON.parse(readFileSync(filePath, "utf8")) as unknown;

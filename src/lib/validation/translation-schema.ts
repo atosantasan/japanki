@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { SUPPORTED_LOCALES } from "@/lib/i18n/locales";
+import { CONTENT_LOCALES } from "@/lib/i18n/locales";
 
 const requiredText = z.string().min(1);
 
@@ -199,7 +199,7 @@ export type AppMessages = z.infer<typeof AppMessagesSchema>;
 export function assertSupportedLocales(
   dictionary: Record<string, unknown>,
 ): asserts dictionary is TranslationDictionary {
-  const missing = SUPPORTED_LOCALES.filter((locale) => !(locale in dictionary));
+  const missing = CONTENT_LOCALES.filter((locale) => !(locale in dictionary));
   if (missing.length > 0) {
     throw new Error(`Missing locale keys: ${missing.join(", ")}`);
   }
