@@ -1,0 +1,73 @@
+import { describe, expect, it, vi } from "vitest";
+import { loadPhrasesForRequest } from "@/lib/phrases/load-phrases";
+
+const validPhrase = {
+  id: "11111111-1111-4111-8111-111111111111",
+  pack_id: "survival",
+  romaji: "arigatou",
+  japanese: "ありがとう",
+  audio_url: "/audio/arigatou.mp3",
+  translations: {
+    en: "Thank you",
+    "zh-TW": "謝謝",
+    "zh-CN": "谢谢",
+    ko: "감사합니다",
+    th: "ขอบคุณ",
+    fr: "Merci",
+    de: "Danke",
+    es: "Gracias",
+  },
+  choices_by_lang: {
+    en: ["Thank you", "Sorry", "Hello"],
+    "zh-TW": ["謝謝", "對不起", "你好"],
+    "zh-CN": ["谢谢", "对不起", "你好"],
+    ko: ["감사합니다", "미안합니다", "안녕하세요"],
+    th: ["ขอบคุณ", "ขอโทษ", "สวัสดี"],
+    fr: ["Merci", "Désolé", "Bonjour"],
+    de: ["Danke", "Entschuldigung", "Hallo"],
+    es: ["Gracias", "Lo siento", "Hola"],
+  },
+  correct_choice_index: 0,
+};
+
+describe("loadPhrasesForRequest", () => {
+  it("returns 401 when getUser finds no session", async () => {
+    const result = await loadPhrasesForRequest("survival", {
+      getUser: vi.fn().mockResolvedValue(null),
+      getPack: vi.fn(),
+      hasPurchase: vi.fn(),
+      getPhrases: vi.fn(),
+    });
+
+    expect(result.status).toBe(401);
+    expect(result.body).toEqual({ error: "Not authenticated" });
+  });
+
+  it("checks user_purchases for paid packs before returning phrases", async () => {
+    const hasPurchase = vi.fn().mockResolvedValue(false);
+    const getPhrases = vi.fn();
+
+    const result = await loadPhrasesForRequest("travel", {
+      getUser: vi.fn().mockResolvedValue({ id: "user-1" }),
+      getPack: vi.fn().mockResolvedValue({ id: "travel", is_free: false }),
+      hasPurchase,
+      getPhrases,
+    });
+
+    expect(hasPurchase).toHaveBeenCalledWith("user-1", "travel");
+    expect(getPhrases).not.toHaveBeenCalled();
+    expect(result.status).toBe(403);
+  });
+
+  it("returns validated phrases for an authenticated free-pack user", async () => {
+    const result = await loadPhrasesForRequest("survival", {
+      getUser: vi.fn().mockResolvedValue({ id: "user-1" }),
+      getPack: vi.fn().mockResolvedValue({ id: "survival", is_free: true }),
+      hasPurchase: vi.fn(),
+      getPhrases: vi.fn().mockResolvedValue([validPhrase]),
+    });
+
+    expect(result.status).toBe(200);
+    expect(result.body).toEqual({ phrases: [validPhrase] });
+  });
+});

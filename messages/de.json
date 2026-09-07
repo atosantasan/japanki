@@ -1,0 +1,196 @@
+{
+  "Metadata": {
+    "title": "Japanki",
+    "description": "Japanisch in einer Minute — fünf Fragen, mit dem Ohr."
+  },
+  "HomePage": {
+    "title": "Japanki",
+    "tagline": "Eine Minute. Fünf Fragen. Japanisch mit dem Ohr lernen.",
+    "sessionHint": "1 Sitzung = 5 Fragen ≈ 1 Minute",
+    "cta": "Loslegen",
+    "contact": "Kontakt",
+    "travelCta": "Reisepaket",
+    "buyTravel": "Reisepaket kaufen"
+  },
+  "Auth": {
+    "guest": "Gast",
+    "saveProgress": "Fortschritt speichern",
+    "continueGoogle": "Mit Google fortfahren",
+    "continueEmail": "E-Mail nutzen, um diese Gastsitzung zu behalten",
+    "emailPlaceholder": "du@example.com",
+    "sendLink": "Link per E-Mail senden",
+    "signOut": "Abmelden",
+    "emailSent": "Prüfe dein Postfach für den Anmeldelink.",
+    "collisionTitle": "Dieses Konto wird bereits verwendet",
+    "collisionBody": "Diese Google- oder E-Mail-Identität ist bereits mit einem anderen Japanki-Konto verknüpft. Melde dich mit dem bestehenden Konto an. Der Gastfortschritt wird nicht zusammengeführt.",
+    "useExisting": "Mit bestehendem Konto anmelden",
+    "stayGuest": "Gast bleiben",
+    "genericError": "Etwas ist schiefgelaufen. Bitte erneut versuchen.",
+    "linked": "Gespeichert",
+    "checkoutGuard": "Verknüpfe ein Konto, um dieses Paket zu kaufen"
+  },
+  "Quiz": {
+    "loading": "Fünf Fragen werden vorbereitet…",
+    "question": "Frage {current} / 5",
+    "playAudio": "Abspielen",
+    "correct": "Richtig",
+    "incorrect": "Nicht ganz",
+    "next": "Weiter",
+    "complete": "1 Minute geschafft!",
+    "home": "Zur Startseite",
+    "paidLocked": "Für dieses Paket ist ein Kauf nötig.",
+    "startError": "Dieses Paket konnte nicht gestartet werden.",
+    "heartsEmpty": "Keine Herzen mehr. Sie füllen sich mit der Zeit.",
+    "notConfigured": "Supabase ist noch nicht konfiguriert.",
+    "audioFallback": "Phrasen-Audio ist noch nicht verfügbar. Japanki spielt einen erzeugten Ton."
+  },
+  "Hearts": {
+    "label": "Herzen",
+    "nextIn": "Nächstes in {time}",
+    "full": "Voll"
+  },
+  "Success": {
+    "title": "Zahlung erhalten",
+    "body": "Stripe bestätigt den Kauf. Das Reisepaket wird nach der Webhook-Prüfung freigeschaltet — diese Seite vergibt keine Rechte.",
+    "cta": "Reisepaket öffnen",
+    "accountCta": "Käufe ansehen"
+  },
+  "Account": {
+    "title": "Käufe",
+    "subtitle": "Sehen Sie freigeschaltete Pakete. Belege und Zahlungsmittel verwalten Sie im Stripe-Kundenportal.",
+    "empty": "Noch keine bezahlten Pakete. Survival ist kostenlos; Travel wird nach Stripe-Bestätigung freigeschaltet.",
+    "purchasedAt": "Gekauft am {date}",
+    "manageBilling": "Abrechnung verwalten",
+    "signInRequired": "Verknüpfen Sie ein Konto, um Käufe und Abrechnung zu sehen.",
+    "noCustomer": "Kein Stripe-Kunde für diese E-Mail. Schließen Sie zuerst einen Kauf ab.",
+    "error": "Abrechnungsdaten konnten nicht geladen werden.",
+    "openPack": "Paket öffnen"
+  },
+  "Legal": {
+    "termsNav": "Nutzungsbedingungen",
+    "privacyNav": "Datenschutz",
+    "tokushoNav": "Rechtshinweis",
+    "accountNav": "Käufe",
+    "updated": "Zuletzt aktualisiert: September 2026",
+    "terms": {
+      "title": "Nutzungsbedingungen",
+      "intro": "Diese Bedingungen gelten für Japanki, eine PWA zum Japanischlernen mit dem Ohr. Die Nutzung bedeutet Zustimmung. Kontakt: japankiadm@gmail.com.",
+      "apply": {
+        "title": "1. Geltungsbereich",
+        "body": "Sie gelten für jede Nutzung von Japanki, einschließlich Gast- (anonymen) Sitzungen, verknüpften Google- oder E-Mail-Konten, Quizzen, Herzen und kostenpflichtigen Paketen."
+      },
+      "registration": {
+        "title": "2. Konten",
+        "body": "Sie können als Gast starten und dann Google oder E-Mail verknüpfen. Eine Verknüpfung führt keine bestehenden Konten zusammen. Bei falschen Angaben, Missbrauch oder Verstößen können wir den Zugang verweigern oder widerrufen."
+      },
+      "fees": {
+        "title": "3. Entgelte und Zahlung",
+        "body": "Das Survival-Paket ist kostenlos. Das Travel-Paket ist einmaliger digitaler Inhalt (USD 2,99, sofern an der Kasse nicht anders angegeben). Zahlungen laufen über Stripe. Wir speichern keine Kartennummern. Zugang gibt es erst nach Webhook-Prüfung, nicht durch die Erfolgsseite. Digitale Inhalte sind grundsätzlich nicht erstattungsfähig, außer gesetzlich vorgeschrieben oder bei unserem Verschulden."
+      },
+      "prohibited": {
+        "title": "4. Verbotenes Verhalten",
+        "body": "Kein Rechtsbruch, Angriff oder Scraping, Reverse Engineering, Betrug bei Herzen, Sitzungen oder Käufen, Identitätsmissbrauch oder Schädigung anderer Lernender."
+      },
+      "interruption": {
+        "title": "5. Aussetzung",
+        "body": "Wir können den Dienst für Wartung, Sicherheit, höhere Gewalt oder andere betriebliche Gründe mit oder ohne Vorankündigung unterbrechen."
+      },
+      "copyright": {
+        "title": "6. Geistiges Eigentum",
+        "body": "Phrasen, Design, Software und Marke von Japanki gehören dem Betreiber. Die Nutzung überträgt kein Eigentum an Inhalten."
+      },
+      "disclaimer": {
+        "title": "7. Haftung",
+        "body": "Japanki ist eine leichte Lernhilfe. Wir garantieren keine Flüssigkeit, Aussprache oder Reiseerfolge. Fehlt Audiodatei, kann ein Web-Audio-Ton erklingen. Soweit gesetzlich zulässig, haften wir nicht für Geräte-, Netz- oder Drittanbieterausfälle (Supabase, Stripe, Vercel, Google)."
+      },
+      "changes": {
+        "title": "8. Änderungen",
+        "body": "Wir können Funktionen ändern oder einstellen. Weitere Nutzung nach einem Update gilt als Annahme."
+      },
+      "governing": {
+        "title": "9. Anwendbares Recht",
+        "body": "Es gilt japanisches Recht. Ungelöste Streitigkeiten unterliegen japanischen Gerichten, soweit zwingendes Verbraucherrecht nichts anderes vorschreibt."
+      },
+      "contact": {
+        "title": "10. Kontakt",
+        "body": "Fragen zu diesen Bedingungen: japankiadm@gmail.com."
+      }
+    },
+    "privacy": {
+      "title": "Datenschutzerklärung",
+      "intro": "Diese Erklärung beschreibt, wie Japanki personenbezogene Daten verarbeitet. Kontakt: japankiadm@gmail.com.",
+      "collect": {
+        "title": "1. Erhobene Daten",
+        "body": "Bei Kontoverknüpfung erheben wir E-Mail und Authentifizierungskennungen. Außerdem speichern wir Herzen, Spracheinstellung und Käufe (Nutzer- und Paket-ID). Stripe verarbeitet Kartendaten; wir speichern keine Kartennummern. Browser können technische Daten senden."
+      },
+      "purpose": {
+        "title": "2. Zwecke",
+        "body": "Betrieb von Japanki: Authentifizierung, Herzen, Freischaltung nach Webhook, Support, Sicherheit und Verbesserung."
+      },
+      "sharing": {
+        "title": "3. Weitergabe",
+        "body": "Kein Verkauf personenbezogener Daten. Weitergabe nur mit Einwilligung, gesetzlich vorgeschrieben oder an Auftragsverarbeiter."
+      },
+      "processors": {
+        "title": "4. Auftragsverarbeiter",
+        "body": "Supabase (Auth und Datenbank), Stripe (Zahlungen und Kundenportal), Vercel (Hosting) und Google (OAuth bei Google-Anmeldung). Japanki sendet Quizinhalte nicht an generative KI-APIs."
+      },
+      "retention": {
+        "title": "5. Speicherung",
+        "body": "Daten liegen bei Auftragsverarbeitern mit verschlüsseltem Transport. RLS beschränkt den Zugriff auf eigene Profile und Käufe."
+      },
+      "deletion": {
+        "title": "6. Löschung",
+        "body": "Zur Kontolöschung an japankiadm@gmail.com schreiben. Wir löschen oder anonymisieren, außer gesetzliche oder Betrugspräventionsgründe stehen entgegen."
+      },
+      "children": {
+        "title": "7. Kinder",
+        "body": "Japanki richtet sich nicht an Kinder unter 13 Jahren (oder dem höheren regionalen Alter). Kontaktieren Sie uns, wenn ein Kind registriert wurde."
+      },
+      "changes": {
+        "title": "8. Änderungen",
+        "body": "Wir können diese Erklärung aktualisieren. Das Datum oben ändert sich. Weitere Nutzung gilt als Annahme."
+      },
+      "contact": {
+        "title": "9. Kontakt",
+        "body": "Datenschutzanfragen: japankiadm@gmail.com."
+      }
+    },
+    "tokusho": {
+      "title": "Angaben nach dem japanischen Gesetz über bestimmte Handelsgeschäfte",
+      "intro": "Dieser Hinweis erfolgt nach dem japanischen Specified Commercial Transactions Act für auf Japanki verkaufte digitale Inhalte.",
+      "disclosureTitle": "Offenlegung auf Anfrage",
+      "disclosureBody": "Gesetzlicher Name, Anschrift und Telefon werden unverzüglich offengelegt, wenn Sie an japankiadm@gmail.com schreiben.",
+      "labelSeller": "Verkäufer",
+      "valueSeller": "Auf Anfrage unverzüglich offengelegt",
+      "labelOperator": "Betriebsverantwortliche/r",
+      "valueOperator": "Auf Anfrage unverzüglich offengelegt",
+      "labelAddress": "Anschrift",
+      "valueAddress": "Auf Anfrage unverzüglich offengelegt",
+      "labelPhone": "Telefon",
+      "valuePhone": "Auf Anfrage unverzüglich offengelegt",
+      "labelEmail": "E-Mail",
+      "valueEmail": "japankiadm@gmail.com",
+      "labelServiceName": "Dienstname",
+      "valueServiceName": "Japanki",
+      "labelServiceUrl": "Dienst-URL",
+      "valueServiceUrl": "Die Japanki-Website, die Sie besuchen",
+      "labelPrice": "Preis",
+      "valuePrice": "Travel-Paket: USD 2,99 (einmalig). Survival-Paket: kostenlos.",
+      "labelExtraFees": "Kosten neben dem Preis",
+      "valueExtraFees": "Keine. Internet-/Mobilfunkkosten trägt die nutzende Person.",
+      "labelPaymentMethod": "Zahlungsmittel",
+      "valuePaymentMethod": "Kreditkarte (Visa, Mastercard, American Express, JCB u. a.) über Stripe",
+      "labelPaymentTiming": "Zahlungszeitpunkt",
+      "valuePaymentTiming": "An der Kasse (einmalig, keine automatische Verlängerung)",
+      "labelDelivery": "Bereitstellung",
+      "valueDelivery": "Sofort nach Stripe-Webhook-Bestätigung",
+      "labelCancel": "Widerruf / Storno",
+      "valueCancel": "Digitale Inhalte grundsätzlich nicht erstattungsfähig, außer gesetzlich vorgeschrieben oder bei unserem Verschulden.",
+      "labelRefund": "Erstattung",
+      "valueRefund": "Grundsätzlich keine Erstattung, außer bei Betreiberverschulden oder gesetzlicher Pflicht.",
+      "labelEnvironment": "Umgebung",
+      "valueEnvironment": "iOS Safari, Android Chrome, Desktop-Browser und PWA (Zum Home-Bildschirm)"
+    }
+  }
+}

@@ -1,0 +1,196 @@
+{
+  "Metadata": {
+    "title": "Japanki",
+    "description": "一分钟学日语——五题，用听的记住。"
+  },
+  "HomePage": {
+    "title": "Japanki",
+    "tagline": "一分钟、五题，用听的学日语。",
+    "sessionHint": "1 个学习时段 = 5 题 ≈ 1 分钟",
+    "cta": "开始学习",
+    "contact": "联系我们",
+    "travelCta": "旅行包",
+    "buyTravel": "购买旅行包"
+  },
+  "Auth": {
+    "guest": "访客",
+    "saveProgress": "保存进度",
+    "continueGoogle": "使用 Google 继续",
+    "continueEmail": "用邮箱保存这个访客进度",
+    "emailPlaceholder": "you@example.com",
+    "sendLink": "发送登录链接",
+    "signOut": "退出",
+    "emailSent": "请到邮箱查看登录链接。",
+    "collisionTitle": "该账号已被使用",
+    "collisionBody": "这个 Google 或邮箱已经连接到其他 Japanki 账号。请改用已有账号登录。访客进度不会自动合并。",
+    "useExisting": "登录已有账号",
+    "stayGuest": "继续以访客使用",
+    "genericError": "出错了，请再试一次。",
+    "linked": "已保存",
+    "checkoutGuard": "请先关联账号才能购买此教材包"
+  },
+  "Quiz": {
+    "loading": "正在准备五题…",
+    "question": "第 {current} / 5 题",
+    "playAudio": "播放",
+    "correct": "正确",
+    "incorrect": "不太对",
+    "next": "下一题",
+    "complete": "一分钟学习完成！",
+    "home": "回首页",
+    "paidLocked": "此教材包需要购买。",
+    "startError": "无法开始这个教材包。",
+    "heartsEmpty": "爱心用完了，会随时间恢复。",
+    "notConfigured": "尚未配置 Supabase。",
+    "audioFallback": "语句音频尚未就绪，Japanki 改为播放生成的音调。"
+  },
+  "Hearts": {
+    "label": "爱心",
+    "nextIn": "下一颗还有 {time}",
+    "full": "已满"
+  },
+  "Success": {
+    "title": "已收到付款",
+    "body": "Stripe 正在确认购买。旅行包会在 Webhook 验证后解锁——这个页面本身不会授予权限。",
+    "cta": "打开旅行包",
+    "accountCta": "查看购买记录"
+  },
+  "Account": {
+    "title": "购买记录",
+    "subtitle": "查看已解锁的教材包。收据与支付方式请在 Stripe 客户门户管理。",
+    "empty": "暂无付费教材包。生存包免费；旅行包会在 Stripe 确认付款后解锁。",
+    "purchasedAt": "购买日期 {date}",
+    "manageBilling": "管理账单",
+    "signInRequired": "请先关联账号才能查看购买与账单。",
+    "noCustomer": "找不到该邮箱对应的 Stripe 客户。请先完成购买。",
+    "error": "无法加载账单信息。",
+    "openPack": "打开教材包"
+  },
+  "Legal": {
+    "termsNav": "服务条款",
+    "privacyNav": "隐私政策",
+    "tokushoNav": "特定商业交易法",
+    "accountNav": "购买记录",
+    "updated": "最后更新：2026 年 9 月",
+    "terms": {
+      "title": "服务条款",
+      "intro": "本服务条款（下称“本条款”）规范 Japanki（用听力学习日语的 PWA）的使用。使用本服务即表示您同意本条款。联系邮箱：japankiadm@gmail.com。",
+      "apply": {
+        "title": "第1条（适用范围）",
+        "body": "本条款适用于 Japanki 的一切使用，包括访客（匿名）会话、已关联的 Google 或电子邮箱账号、测验、爱心与付费教材包。"
+      },
+      "registration": {
+        "title": "第2条（账号）",
+        "body": "您可以访客身份开始，再关联 Google 或电子邮箱。关联不会合并两个既有账号。若提供虚假信息、滥用或违反本条款，我们可拒绝或取消使用。"
+      },
+      "fees": {
+        "title": "第3条（费用与付款）",
+        "body": "生存包免费。旅行包为一次性付费数字内容（结账页另有标明者除外，价格为 USD 2.99）。付款由 Stripe 处理。我们不存储信用卡号。权限仅在 Stripe Webhook 验证后授予，成功页本身不会授权。除法律要求或可归责于我们的情形外，数字内容原则上不予退款。"
+      },
+      "prohibited": {
+        "title": "第4条（禁止事项）",
+        "body": "不得违法、攻击或爬取服务、逆向工程、不正当操纵爱心/场次/购买、冒充他人，或以损害其他学习者的方式使用 Japanki。"
+      },
+      "interruption": {
+        "title": "第5条（中止提供）",
+        "body": "因维护、安全、不可抗力或其他难以继续运营的事由，我们可不经事先通知暂停全部或部分服务。"
+      },
+      "copyright": {
+        "title": "第6条（知识产权）",
+        "body": "Japanki 的语句、设计、软件与品牌归运营者所有。使用本应用并不转让内容所有权。"
+      },
+      "disclaimer": {
+        "title": "第7条（免责）",
+        "body": "Japanki 为轻量学习辅助。我们不保证流利度、发音或旅行效果。若语句音频尚未配置，可能改为播放 Web Audio 音调。除法律禁止限制责任的情形外，我们对设备、网络或第三方（Supabase、Stripe、Vercel、Google）故障不承担责任。"
+      },
+      "changes": {
+        "title": "第8条（变更）",
+        "body": "我们可变更或停止功能。更新后继续使用，视为接受修订后的条款。"
+      },
+      "governing": {
+        "title": "第9条（准据法）",
+        "body": "本条款以日本法律为准据法。若争议未能解决，除强制性消费者保护规定另有规定外，由日本法院管辖。"
+      },
+      "contact": {
+        "title": "第10条（联系）",
+        "body": "条款相关询问：japankiadm@gmail.com。"
+      }
+    },
+    "privacy": {
+      "title": "隐私政策",
+      "intro": "本政策说明 Japanki 如何处理个人数据。联系邮箱：japankiadm@gmail.com。",
+      "collect": {
+        "title": "第1条（收集信息）",
+        "body": "若您关联账号，我们会收集电子邮箱与认证标识。也会存储测验爱心、语言偏好与购买记录（用户 ID 与教材包 ID）。卡数据由 Stripe 处理，我们不存储卡号。浏览器可能发送设备类型等技术信息。"
+      },
+      "purpose": {
+        "title": "第2条（使用目的）",
+        "body": "用于提供 Japanki：身份验证、爱心、Webhook 验证后解锁付费包、客服、安全与服务改进。"
+      },
+      "sharing": {
+        "title": "第3条（共享）",
+        "body": "我们不出售个人数据。仅在您同意、法律要求，或为运营而与处理方共享。"
+      },
+      "processors": {
+        "title": "第4条（处理方）",
+        "body": "Supabase（认证与数据库）、Stripe（支付与客户门户）、Vercel（托管），以及您选择 Google 登录时的 Google OAuth。各方按其隐私政策处理数据。Japanki 不会将测验内容发送至生成式 AI API。"
+      },
+      "retention": {
+        "title": "第5条（保存）",
+        "body": "数据保存在处理方，并通过加密传输。行级安全策略限制用户只能访问自己的资料与购买记录。"
+      },
+      "deletion": {
+        "title": "第6条（删除）",
+        "body": "如需删除账号及相关数据，请发信至 japankiadm@gmail.com。除法律或防欺诈需要外，我们将删除或匿名化。"
+      },
+      "children": {
+        "title": "第7条（儿童）",
+        "body": "Japanki 不以 13 岁以下（或您所在地区规定的更高年龄）儿童为对象。如认为儿童已注册，请联系我们。"
+      },
+      "changes": {
+        "title": "第8条（变更）",
+        "body": "我们可能更新本政策并修改文首日期。更新后继续使用视为同意。"
+      },
+      "contact": {
+        "title": "第9条（联系）",
+        "body": "隐私相关请求：japankiadm@gmail.com。"
+      }
+    },
+    "tokusho": {
+      "title": "特定商业交易法相关标示",
+      "intro": "本标示依据日本《特定商业交易法》，就 Japanki 销售的数字内容披露必要事项。",
+      "disclosureTitle": "关于披露请求",
+      "disclosureBody": "如需披露法定名称、地址与电话，请发信至 japankiadm@gmail.com，我们将尽快提供。",
+      "labelSeller": "销售业者",
+      "valueSeller": "一经请求将尽快披露",
+      "labelOperator": "运营责任人",
+      "valueOperator": "一经请求将尽快披露",
+      "labelAddress": "所在地",
+      "valueAddress": "一经请求将尽快披露",
+      "labelPhone": "电话号码",
+      "valuePhone": "一经请求将尽快披露",
+      "labelEmail": "电子邮箱",
+      "valueEmail": "japankiadm@gmail.com",
+      "labelServiceName": "服务名称",
+      "valueServiceName": "Japanki",
+      "labelServiceUrl": "服务网址",
+      "valueServiceUrl": "您正在访问的 Japanki 网站",
+      "labelPrice": "价格",
+      "valuePrice": "旅行包：USD 2.99（一次性）。生存包：免费。",
+      "labelExtraFees": "价格以外费用",
+      "valueExtraFees": "无。互联网/移动数据费用由用户承担。",
+      "labelPaymentMethod": "支付方式",
+      "valuePaymentMethod": "信用卡（Visa、Mastercard、American Express、JCB 等），由 Stripe 处理",
+      "labelPaymentTiming": "支付时间",
+      "valuePaymentTiming": "结账时（一次性支付，无自动续订）",
+      "labelDelivery": "提供时间",
+      "valueDelivery": "Stripe Webhook 确认后立即提供",
+      "labelCancel": "取消",
+      "valueCancel": "数字内容原则上不可取消/退款，法律要求或可归责于我们的情形除外。",
+      "labelRefund": "退款",
+      "valueRefund": "原则上不退款。运营者过失或法律要求时除外。",
+      "labelEnvironment": "运行环境",
+      "valueEnvironment": "iOS Safari、Android Chrome、桌面浏览器及 PWA（添加到主屏幕）"
+    }
+  }
+}

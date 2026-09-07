@@ -1,0 +1,196 @@
+{
+  "Metadata": {
+    "title": "Japanki",
+    "description": "Learn Japanese in one minute — five questions, by ear."
+  },
+  "HomePage": {
+    "title": "Japanki",
+    "tagline": "One minute. Five questions. Learn Japanese by ear.",
+    "sessionHint": "1 session = 5 questions ≈ 1 minute",
+    "cta": "Start learning",
+    "contact": "Contact",
+    "travelCta": "Travel pack",
+    "buyTravel": "Buy travel pack"
+  },
+  "Auth": {
+    "guest": "Guest",
+    "saveProgress": "Save progress",
+    "continueGoogle": "Continue with Google",
+    "continueEmail": "Use email to keep this guest session",
+    "emailPlaceholder": "you@example.com",
+    "sendLink": "Email me a link",
+    "signOut": "Sign out",
+    "emailSent": "Check your inbox for the sign-in link.",
+    "collisionTitle": "This account is already in use",
+    "collisionBody": "That Google or email identity is already linked to another Japanki account. Sign in with the existing account instead. Guest progress will not be merged.",
+    "useExisting": "Sign in to existing account",
+    "stayGuest": "Stay a guest",
+    "genericError": "Something went wrong. Please try again.",
+    "linked": "Saved",
+    "checkoutGuard": "Link an account to buy this pack"
+  },
+  "Quiz": {
+    "loading": "Preparing five questions…",
+    "question": "Question {current} / 5",
+    "playAudio": "Play",
+    "correct": "Correct",
+    "incorrect": "Not quite",
+    "next": "Next",
+    "complete": "1-minute complete!",
+    "home": "Back home",
+    "paidLocked": "Purchase required for this pack.",
+    "startError": "Could not start this pack.",
+    "heartsEmpty": "No hearts left. They refill over time.",
+    "notConfigured": "Supabase is not configured yet.",
+    "audioFallback": "Phrase audio is not available yet, so Japanki is playing a generated tone."
+  },
+  "Hearts": {
+    "label": "Hearts",
+    "nextIn": "Next in {time}",
+    "full": "Full"
+  },
+  "Success": {
+    "title": "Payment received",
+    "body": "Stripe is confirming your purchase. The travel pack unlocks after the webhook is verified — this page does not grant access by itself.",
+    "cta": "Open travel pack",
+    "accountCta": "View purchases"
+  },
+  "Account": {
+    "title": "Purchases",
+    "subtitle": "Review packs you unlocked. Receipts and payment methods are managed in the Stripe customer portal.",
+    "empty": "No paid packs yet. Survival is free; Travel unlocks after Stripe confirms payment.",
+    "purchasedAt": "Purchased {date}",
+    "manageBilling": "Manage billing",
+    "signInRequired": "Link an account to see purchases and billing.",
+    "noCustomer": "No Stripe customer was found for this email. Complete a purchase first.",
+    "error": "Could not load billing information.",
+    "openPack": "Open pack"
+  },
+  "Legal": {
+    "termsNav": "Terms",
+    "privacyNav": "Privacy",
+    "tokushoNav": "Legal notice",
+    "accountNav": "Purchases",
+    "updated": "Last updated: September 2026",
+    "terms": {
+      "title": "Terms of Service",
+      "intro": "These Terms of Service (“Terms”) govern your use of Japanki, a Japanese-learning PWA. By using the service you agree to these Terms. Contact: japankiadm@gmail.com.",
+      "apply": {
+        "title": "1. Scope",
+        "body": "These Terms apply to every use of Japanki, including guest (anonymous) sessions, linked Google or email accounts, quizzes, hearts, and paid content packs."
+      },
+      "registration": {
+        "title": "2. Accounts",
+        "body": "You may start as a guest, then link Google or email. Linking does not merge two existing accounts. We may refuse or revoke access for false information, abuse, or Terms violations."
+      },
+      "fees": {
+        "title": "3. Fees and payments",
+        "body": "The Survival pack is free. The Travel pack is a one-time paid digital pack (USD 2.99 unless shown otherwise at checkout). Payments are processed by Stripe. We do not store card numbers. Access is granted only after the Stripe webhook is verified—not by visiting the success page. Digital content is generally non-refundable except where required by law or caused by our fault."
+      },
+      "prohibited": {
+        "title": "4. Prohibited conduct",
+        "body": "You must not break the law; attack or scrape the service; reverse-engineer the app; cheat hearts, sessions, or purchases; impersonate others; or use Japanki in a way that harms other learners."
+      },
+      "interruption": {
+        "title": "5. Suspension",
+        "body": "We may pause the service for maintenance, security, force majeure, or other reasons that make operation impractical, with or without prior notice."
+      },
+      "copyright": {
+        "title": "6. Intellectual property",
+        "body": "Japanki phrases, design, software, and branding belong to the operator. Using the app does not transfer ownership of content to you."
+      },
+      "disclaimer": {
+        "title": "7. Disclaimer",
+        "body": "Japanki is a lightweight learning aid. We do not guarantee fluency, pronunciation, or travel outcomes. When phrase audio files are missing, a Web Audio tone may play instead. We are not liable for device, network, or third-party (Supabase, Stripe, Vercel, Google) failures except where the law forbids such a limit."
+      },
+      "changes": {
+        "title": "8. Changes",
+        "body": "We may change or discontinue features. Continued use after an update means you accept the revised Terms."
+      },
+      "governing": {
+        "title": "9. Governing law",
+        "body": "These Terms are governed by the laws of Japan. If a dispute cannot be resolved, the courts of Japan have jurisdiction unless mandatory consumer law says otherwise."
+      },
+      "contact": {
+        "title": "10. Contact",
+        "body": "Questions about these Terms: japankiadm@gmail.com."
+      }
+    },
+    "privacy": {
+      "title": "Privacy Policy",
+      "intro": "This Privacy Policy explains how Japanki handles personal data. Contact: japankiadm@gmail.com.",
+      "collect": {
+        "title": "1. Information we collect",
+        "body": "If you link an account we collect your email and authentication identifiers. We also store quiz hearts, language preference, and purchase records (user id and pack id). Stripe handles card data; we do not store card numbers. Browsers may send technical data such as device type."
+      },
+      "purpose": {
+        "title": "2. Purpose",
+        "body": "We use this information to run Japanki: authentication, hearts, unlocking paid packs after webhook verification, support, security, and service improvement."
+      },
+      "sharing": {
+        "title": "3. Sharing",
+        "body": "We do not sell personal data. We share it only with your consent, when required by law, or with processors who help operate the service."
+      },
+      "processors": {
+        "title": "4. Processors",
+        "body": "Supabase (auth and database), Stripe (payments and customer portal), Vercel (hosting), and Google (OAuth if you choose Google sign-in). Each follows its own privacy policy. Japanki does not send quiz content to generative AI APIs."
+      },
+      "retention": {
+        "title": "5. Storage",
+        "body": "Data is stored with our processors using encrypted transport. Row Level Security limits users to their own profiles and purchases."
+      },
+      "deletion": {
+        "title": "6. Deletion",
+        "body": "To delete your account and related data, email japankiadm@gmail.com. We will delete or anonymize records unless we must keep them for legal or fraud reasons."
+      },
+      "children": {
+        "title": "7. Children",
+        "body": "Japanki is not directed at children under 13 (or the higher age required in your region). If you believe a child registered, contact us."
+      },
+      "changes": {
+        "title": "8. Changes",
+        "body": "We may update this policy. The date at the top will change. Continued use after an update constitutes acceptance."
+      },
+      "contact": {
+        "title": "9. Contact",
+        "body": "Privacy requests: japankiadm@gmail.com."
+      }
+    },
+    "tokusho": {
+      "title": "Specified Commercial Transactions",
+      "intro": "This notice is provided under Japan’s Act on Specified Commercial Transactions for digital content sold on Japanki.",
+      "disclosureTitle": "Disclosure on request",
+      "disclosureBody": "Legal name, address, and phone number will be disclosed without delay if you email japankiadm@gmail.com.",
+      "labelSeller": "Seller",
+      "valueSeller": "Disclosed without delay upon request",
+      "labelOperator": "Operator",
+      "valueOperator": "Disclosed without delay upon request",
+      "labelAddress": "Address",
+      "valueAddress": "Disclosed without delay upon request",
+      "labelPhone": "Phone",
+      "valuePhone": "Disclosed without delay upon request",
+      "labelEmail": "Email",
+      "valueEmail": "japankiadm@gmail.com",
+      "labelServiceName": "Service name",
+      "valueServiceName": "Japanki",
+      "labelServiceUrl": "Service URL",
+      "valueServiceUrl": "The Japanki website you are visiting",
+      "labelPrice": "Price",
+      "valuePrice": "Travel pack: USD 2.99 (one-time). Survival pack: free.",
+      "labelExtraFees": "Fees besides the price",
+      "valueExtraFees": "None. Internet / mobile data charges are paid by the user.",
+      "labelPaymentMethod": "Payment method",
+      "valuePaymentMethod": "Credit card (Visa, Mastercard, American Express, JCB, and others) via Stripe",
+      "labelPaymentTiming": "Payment timing",
+      "valuePaymentTiming": "At checkout (one-time payment, no auto-renewal)",
+      "labelDelivery": "Delivery",
+      "valueDelivery": "Immediately after Stripe webhook confirmation",
+      "labelCancel": "Cancellation",
+      "valueCancel": "Digital content is generally non-refundable except where required by law or due to our fault.",
+      "labelRefund": "Refunds",
+      "valueRefund": "No refunds in principle. Exceptions apply for operator error or legal requirements.",
+      "labelEnvironment": "Operating environment",
+      "valueEnvironment": "iOS Safari, Android Chrome, desktop browsers, and PWA (Add to Home Screen)"
+    }
+  }
+}
