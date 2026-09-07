@@ -11,6 +11,10 @@ import {
 import { useLocale } from "next-intl";
 import { usePathname } from "@/i18n/navigation";
 import { mapAuthError, type MappedAuthError } from "@/lib/auth/identity-errors";
+import {
+  authCallbackUrl,
+  persistAuthNextPath,
+} from "@/lib/auth/oauth-redirect";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 
@@ -43,8 +47,8 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-function callbackUrl(nextPath: string): string {
-  return `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextPath)}`;
+function callbackUrl(): string {
+  return authCallbackUrl(window.location.origin);
 }
 
 function toProfile(
@@ -134,26 +138,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
       setAuthError(null);
+      persistAuthNextPath(nextPath);
       const supabase = createBrowserSupabaseClient();
-      if (mode === "existing") {
-        await supabase.auth.signOut();
-        const { error } = await supabase.auth.signInWithOAuth({
-          provider: "google",
-          options: { redirectTo: callbackUrl(nextPath) },
-        });
-        if (error) {
-          setAuthError(mapAuthError(error));
-        }
+      const oauthOptions = {
+        redirectTo: callbackUrl(),
+        skipBrowserRedirect: true as const,
+      };
+
+      const { data, error } =
+        mode === "existing"
+          ? await (async () => {
+              await supabase.auth.signOut();
+              return supabase.auth.signInWithOAuth({
+                provider: "google",
+                options: oauthOptions,
+              });
+            })()
+          : await supabase.auth.linkIdentity({
+              provider: "google",
+              options: oauthOptions,
+            });
+
+      if (error) {
+        console.error("Google auth failed", error);
+        setAuthError(mapAuthError(error));
         return;
       }
-
-      const { error } = await supabase.auth.linkIdentity({
-        provider: "google",
-        options: { redirectTo: callbackUrl(nextPath) },
-      });
-      if (error) {
-        setAuthError(mapAuthError(error));
+      if (data.url) {
+        window.location.assign(data.url);
+        return;
       }
+      console.error("Google auth failed: missing oauth url");
+      setAuthError(mapAuthError({ message: "missing oauth url" }));
     },
     [configured, nextPath],
   );
@@ -166,11 +182,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setAuthError(null);
       setEmailSent(false);
       const supabase = createBrowserSupabaseClient();
+      persistAuthNextPath(nextPath);
       if (mode === "existing") {
         await supabase.auth.signOut();
         const { error } = await supabase.auth.signInWithOtp({
           email,
-          options: { emailRedirectTo: callbackUrl(nextPath) },
+          options: { emailRedirectTo: callbackUrl() },
         });
         if (error) {
           setAuthError(mapAuthError(error));
