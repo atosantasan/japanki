@@ -6,6 +6,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import { useLocale } from "next-intl";
@@ -113,6 +114,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   });
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  const autoCheckoutTriggeredRef = useRef(false);
 
   const refreshProfile = useCallback(async () => {
     if (!configured) {
@@ -201,6 +203,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const supabase = createBrowserSupabaseClient();
 
     async function boot() {
+      await supabase.auth.getSession();
       const { data } = await supabase.auth.getUser();
       if (!data.user) {
         const { error } = await supabase.auth.signInAnonymously();
@@ -223,12 +226,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
       if (
+        event === "INITIAL_SESSION" ||
         event === "SIGNED_IN" ||
         event === "USER_UPDATED" ||
         event === "TOKEN_REFRESHED"
       ) {
+        await supabase.auth.getSession();
         await refreshProfile();
       } else if (event === "SIGNED_OUT") {
+        autoCheckoutTriggeredRef.current = false;
         setProfile(null);
       }
     });
@@ -240,7 +246,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [configured, refreshProfile]);
 
   useEffect(() => {
-    if (!profile || profile.isAnonymous || isCheckingOut) {
+    if (
+      !profile ||
+      profile.isAnonymous ||
+      isCheckingOut ||
+      autoCheckoutTriggeredRef.current
+    ) {
       return;
     }
 
@@ -251,6 +262,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const targetPack =
       pendingCheckoutPackId || getPendingCheckoutPack(searchParams);
     if (targetPack) {
+      autoCheckoutTriggeredRef.current = true;
       void (async () => {
         setLinkModalOpen(false);
         setPendingCheckoutPackId(null);
@@ -346,6 +358,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!configured) {
       return;
     }
+    autoCheckoutTriggeredRef.current = false;
     const supabase = createBrowserSupabaseClient();
     await supabase.auth.signOut();
     await supabase.auth.signInAnonymously();

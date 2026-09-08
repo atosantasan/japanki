@@ -35,7 +35,12 @@ export async function syncProfileSafely(
   locale?: string,
 ): Promise<SyncProfileResult> {
   const { data: sessionData } = await supabase.auth.getSession();
-  if (!sessionData?.session?.user) {
+  let user = sessionData?.session?.user;
+  if (!user && typeof supabase.auth.getUser === "function") {
+    const { data: userData } = await supabase.auth.getUser();
+    user = userData?.user ?? undefined;
+  }
+  if (!user) {
     return { data: null, error: null };
   }
 
