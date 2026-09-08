@@ -27,7 +27,9 @@
     "stayGuest": "Stay a guest",
     "genericError": "Something went wrong. Please try again.",
     "linked": "Saved",
-    "checkoutGuard": "Link an account to buy this pack"
+    "checkoutGuard": "Link an account to buy this pack",
+    "checkoutRedirecting": "Redirecting to checkout…",
+    "checkoutError": "Could not start checkout. Please try again."
   },
   "Quiz": {
     "loading": "Preparing five questions…",

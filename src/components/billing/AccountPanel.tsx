@@ -45,20 +45,26 @@ export function AccountPanel() {
 
     let cancelled = false;
     void (async () => {
-      const supabase = createBrowserSupabaseClient();
-      const { data, error } = await supabase
-        .from("user_purchases")
-        .select("pack_id, created_at, content_packs(title)")
-        .order("created_at", { ascending: false });
-      if (cancelled) {
-        return;
+      try {
+        const supabase = createBrowserSupabaseClient();
+        const { data, error } = await supabase
+          .from("user_purchases")
+          .select("pack_id, created_at, content_packs(title)")
+          .order("created_at", { ascending: false });
+        if (cancelled) {
+          return;
+        }
+        if (error) {
+          setLoadError(true);
+          return;
+        }
+        setLoadError(false);
+        setPurchases((data as PurchaseRow[] | null) ?? []);
+      } catch {
+        if (!cancelled) {
+          setLoadError(true);
+        }
       }
-      if (error) {
-        setLoadError(true);
-        return;
-      }
-      setLoadError(false);
-      setPurchases((data as PurchaseRow[] | null) ?? []);
     })();
 
     return () => {
@@ -69,27 +75,38 @@ export function AccountPanel() {
   async function openPortal() {
     setPortalBusy(true);
     setPortalError(null);
-    const response = await fetch("/api/billing/portal", {
-      method: "POST",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ locale }),
-    });
-    const payload = (await response.json()) as { url?: string; error?: string };
-    setPortalBusy(false);
-    if (response.status === 403 && payload.error === "identity_linking_required") {
-      openLinkModal("checkout");
-      return;
-    }
-    if (response.status === 404 || payload.error === "no_customer") {
-      setPortalError("noCustomer");
-      return;
-    }
-    if (!response.ok || !payload.url) {
+    try {
+      const response = await fetch("/api/billing/portal", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ locale }),
+      });
+      const payload = (await response.json()) as {
+        url?: string;
+        error?: string;
+      };
+      setPortalBusy(false);
+      if (
+        response.status === 403 &&
+        payload.error === "identity_linking_required"
+      ) {
+        openLinkModal("checkout");
+        return;
+      }
+      if (response.status === 404 || payload.error === "no_customer") {
+        setPortalError("noCustomer");
+        return;
+      }
+      if (!response.ok || !payload.url) {
+        setPortalError("error");
+        return;
+      }
+      window.location.assign(payload.url);
+    } catch {
+      setPortalBusy(false);
       setPortalError("error");
-      return;
     }
-    window.location.assign(payload.url);
   }
 
   if (loading) {

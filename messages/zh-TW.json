@@ -27,7 +27,9 @@
     "stayGuest": "繼續以訪客使用",
     "genericError": "發生錯誤，請再試一次。",
     "linked": "已保存",
-    "checkoutGuard": "請先連結帳號才能購買此教材包"
+    "checkoutGuard": "請先連結帳號才能購買此教材包",
+    "checkoutRedirecting": "正在前往結帳頁面…",
+    "checkoutError": "無法開始結帳，請再試一次。"
   },
   "Quiz": {
     "loading": "正在準備五題…",

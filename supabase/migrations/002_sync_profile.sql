@@ -1,6 +1,10 @@
 -- Non-destructive: profile sync RPC for identity linking.
 -- Client UPDATE policies remain absent; only this SECURITY DEFINER RPC can update the caller's row.
 
+-- Drop overloaded definitions to prevent signature ambiguity and 400 Bad Request
+drop function if exists public.sync_profile();
+drop function if exists public.sync_profile(text);
+
 create or replace function public.sync_profile(preferred_language_param text default null)
 returns table(
   id uuid,

@@ -80,6 +80,8 @@ export const AppMessagesSchema = z.object({
     genericError: requiredText,
     linked: requiredText,
     checkoutGuard: requiredText,
+    checkoutRedirecting: requiredText,
+    checkoutError: requiredText,
   }),
   Quiz: z.object({
     loading: requiredText,

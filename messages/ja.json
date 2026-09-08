@@ -27,7 +27,9 @@
     "stayGuest": "ゲストのまま続ける",
     "genericError": "エラーが発生しました。もう一度お試しください。",
     "linked": "保存しました",
-    "checkoutGuard": "このパックを購入するにはアカウントを連携してください"
+    "checkoutGuard": "このパックを購入するにはアカウントを連携してください",
+    "checkoutRedirecting": "決済画面へ移動しています…",
+    "checkoutError": "決済を開始できませんでした。もう一度お試しください。"
   },
   "Quiz": {
     "loading": "5問を準備しています…",

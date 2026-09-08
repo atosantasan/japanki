@@ -27,7 +27,9 @@
     "stayGuest": "Rester invité",
     "genericError": "Une erreur s'est produite. Réessayez.",
     "linked": "Enregistré",
-    "checkoutGuard": "Liez un compte pour acheter ce pack"
+    "checkoutGuard": "Liez un compte pour acheter ce pack",
+    "checkoutRedirecting": "Redirection vers le paiement…",
+    "checkoutError": "Impossible de lancer le paiement. Veuillez réessayer."
   },
   "Quiz": {
     "loading": "Préparation de cinq questions…",

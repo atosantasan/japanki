@@ -27,7 +27,9 @@
     "stayGuest": "Gast bleiben",
     "genericError": "Etwas ist schiefgelaufen. Bitte erneut versuchen.",
     "linked": "Gespeichert",
-    "checkoutGuard": "Verknüpfe ein Konto, um dieses Paket zu kaufen"
+    "checkoutGuard": "Verknüpfe ein Konto, um dieses Paket zu kaufen",
+    "checkoutRedirecting": "Weiterleitung zur Kasse…",
+    "checkoutError": "Bezahlvorgang konnte nicht gestartet werden. Bitte versuche es erneut."
   },
   "Quiz": {
     "loading": "Fünf Fragen werden vorbereitet…",

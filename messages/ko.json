@@ -27,7 +27,9 @@
     "stayGuest": "게스트로 계속",
     "genericError": "문제가 발생했습니다. 다시 시도하세요.",
     "linked": "저장됨",
-    "checkoutGuard": "이 팩을 구매하려면 계정을 연결하세요"
+    "checkoutGuard": "이 팩을 구매하려면 계정을 연결하세요",
+    "checkoutRedirecting": "결제 화면으로 이동 중입니다…",
+    "checkoutError": "결제를 시작할 수 없습니다. 다시 시도해 주세요."
   },
   "Quiz": {
     "loading": "문제 5개를 준비하는 중…",

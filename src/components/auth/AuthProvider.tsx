@@ -15,6 +15,12 @@ import {
   authCallbackUrl,
   persistAuthNextPath,
 } from "@/lib/auth/oauth-redirect";
+import { syncProfileSafely } from "@/lib/auth/sync-profile";
+import {
+  clearPendingCheckoutPack,
+  getPendingCheckoutPack,
+  setPendingCheckoutPack,
+} from "@/lib/billing/pending-checkout";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 
@@ -35,9 +41,14 @@ type AuthContextValue = {
   authError: MappedAuthError | null;
   linkModalOpen: boolean;
   linkModalReason: LinkModalReason;
-  openLinkModal: (reason?: LinkModalReason) => void;
+  pendingCheckoutPackId: string | null;
+  isCheckingOut: boolean;
+  checkoutError: string | null;
+  openLinkModal: (reason?: LinkModalReason, packId?: string) => void;
   closeLinkModal: () => void;
   clearAuthError: () => void;
+  clearCheckoutError: () => void;
+  triggerCheckout: (packId: string) => Promise<void>;
   continueWithGoogle: (mode: "link" | "existing") => Promise<void>;
   continueWithEmail: (email: string, mode: "link" | "existing") => Promise<void>;
   signOut: () => Promise<void>;
@@ -76,33 +87,110 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(configured);
   const [emailSent, setEmailSent] = useState(false);
   const [profile, setProfile] = useState<AuthProfile | null>(null);
-  const [authError, setAuthError] = useState<MappedAuthError | null>(null);
+  const [authError, setAuthError] = useState<MappedAuthError | null>(() => {
+    if (typeof window !== "undefined") {
+      const errorParam = new URLSearchParams(window.location.search).get(
+        "authError",
+      );
+      if (errorParam) {
+        return mapAuthError({ message: errorParam });
+      }
+    }
+    return null;
+  });
   const [linkModalOpen, setLinkModalOpen] = useState(false);
   const [linkModalReason, setLinkModalReason] =
     useState<LinkModalReason>("save");
-
-  const nextPath = `/${locale}${pathname}`;
+  const [pendingCheckoutPackId, setPendingCheckoutPackId] = useState<
+    string | null
+  >(() => {
+    if (typeof window !== "undefined") {
+      return getPendingCheckoutPack(
+        new URLSearchParams(window.location.search),
+      );
+    }
+    return null;
+  });
+  const [isCheckingOut, setIsCheckingOut] = useState(false);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
 
   const refreshProfile = useCallback(async () => {
     if (!configured) {
       return null;
     }
     const supabase = createBrowserSupabaseClient();
-    const { data, error } = await supabase.rpc("sync_profile", {
-      preferred_language_param: locale,
-    });
+    const { data, error } = await syncProfileSafely(supabase, locale);
     if (error) {
-      setAuthError(mapAuthError(error));
+      const mapped = mapAuthError(error);
+      if (mapped.kind !== "generic") {
+        setAuthError(mapped);
+      }
       return null;
     }
-    const row = Array.isArray(data) ? data[0] : data;
-    if (!row || typeof row !== "object") {
+    if (!data || typeof data !== "object") {
       return null;
     }
-    const nextProfile = toProfile(row as Record<string, unknown>, locale);
+    const nextProfile = toProfile(data as Record<string, unknown>, locale);
     setProfile(nextProfile);
     return nextProfile;
   }, [configured, locale]);
+
+  const openLinkModal = useCallback(
+    (reason: LinkModalReason = "save", packId?: string) => {
+      setAuthError(null);
+      setEmailSent(false);
+      setLinkModalReason(reason);
+      if (packId) {
+        setPendingCheckoutPackId(packId);
+        setPendingCheckoutPack(packId);
+      }
+      setLinkModalOpen(true);
+    },
+    [],
+  );
+
+  const closeLinkModal = useCallback(() => setLinkModalOpen(false), []);
+
+  const clearAuthError = useCallback(() => setAuthError(null), []);
+  const clearCheckoutError = useCallback(() => setCheckoutError(null), []);
+
+  const triggerCheckout = useCallback(
+    async (packId: string) => {
+      setIsCheckingOut(true);
+      setCheckoutError(null);
+      try {
+        const response = await fetch("/api/checkout", {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ packId, locale }),
+        });
+        const payload = (await response.json()) as {
+          url?: string;
+          error?: string;
+        };
+        if (
+          response.status === 403 &&
+          payload.error === "identity_linking_required"
+        ) {
+          openLinkModal("checkout", packId);
+          setIsCheckingOut(false);
+          return;
+        }
+        if (!response.ok || !payload.url) {
+          setCheckoutError(payload.error || "checkout_failed");
+          setIsCheckingOut(false);
+          return;
+        }
+        clearPendingCheckoutPack();
+        window.location.assign(payload.url);
+      } catch {
+        setCheckoutError("checkout_failed");
+        setIsCheckingOut(false);
+      }
+    },
+    [locale, openLinkModal],
+  );
 
   useEffect(() => {
     if (!configured) {
@@ -110,9 +198,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     let cancelled = false;
+    const supabase = createBrowserSupabaseClient();
 
     async function boot() {
-      const supabase = createBrowserSupabaseClient();
       const { data } = await supabase.auth.getUser();
       if (!data.user) {
         const { error } = await supabase.auth.signInAnonymously();
@@ -127,10 +215,49 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     void boot();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event) => {
+      if (cancelled) {
+        return;
+      }
+      if (
+        event === "SIGNED_IN" ||
+        event === "USER_UPDATED" ||
+        event === "TOKEN_REFRESHED"
+      ) {
+        await refreshProfile();
+      } else if (event === "SIGNED_OUT") {
+        setProfile(null);
+      }
+    });
+
     return () => {
       cancelled = true;
+      subscription.unsubscribe();
     };
   }, [configured, refreshProfile]);
+
+  useEffect(() => {
+    if (!profile || profile.isAnonymous || isCheckingOut) {
+      return;
+    }
+
+    const searchParams =
+      typeof window !== "undefined"
+        ? new URLSearchParams(window.location.search)
+        : null;
+    const targetPack =
+      pendingCheckoutPackId || getPendingCheckoutPack(searchParams);
+    if (targetPack) {
+      void (async () => {
+        setLinkModalOpen(false);
+        setPendingCheckoutPackId(null);
+        await triggerCheckout(targetPack);
+      })();
+    }
+  }, [profile, isCheckingOut, pendingCheckoutPackId, triggerCheckout]);
 
   const continueWithGoogle = useCallback(
     async (mode: "link" | "existing") => {
@@ -138,6 +265,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
       setAuthError(null);
+      const nextPath =
+        pendingCheckoutPackId && linkModalReason === "checkout"
+          ? `/${locale}${pathname}?checkout=${encodeURIComponent(pendingCheckoutPackId)}`
+          : `/${locale}${pathname}`;
+
       persistAuthNextPath(nextPath);
       const supabase = createBrowserSupabaseClient();
       const oauthOptions = {
@@ -160,7 +292,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             });
 
       if (error) {
-        console.error("Google auth failed", error);
         setAuthError(mapAuthError(error));
         return;
       }
@@ -168,10 +299,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         window.location.assign(data.url);
         return;
       }
-      console.error("Google auth failed: missing oauth url");
       setAuthError(mapAuthError({ message: "missing oauth url" }));
     },
-    [configured, nextPath],
+    [configured, linkModalReason, locale, pathname, pendingCheckoutPackId],
   );
 
   const continueWithEmail = useCallback(
@@ -181,6 +311,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       setAuthError(null);
       setEmailSent(false);
+      const nextPath =
+        pendingCheckoutPackId && linkModalReason === "checkout"
+          ? `/${locale}${pathname}?checkout=${encodeURIComponent(pendingCheckoutPackId)}`
+          : `/${locale}${pathname}`;
+
       const supabase = createBrowserSupabaseClient();
       persistAuthNextPath(nextPath);
       if (mode === "existing") {
@@ -204,7 +339,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       setEmailSent(true);
     },
-    [configured, nextPath],
+    [configured, linkModalReason, locale, pathname, pendingCheckoutPackId],
   );
 
   const signOut = useCallback(async () => {
@@ -216,20 +351,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await supabase.auth.signInAnonymously();
     await refreshProfile();
   }, [configured, refreshProfile]);
-
-  const openLinkModal = useCallback(
-    (reason: LinkModalReason = "save") => {
-      setAuthError(null);
-      setEmailSent(false);
-      setLinkModalReason(reason);
-      setLinkModalOpen(true);
-    },
-    [],
-  );
-
-  const closeLinkModal = useCallback(() => setLinkModalOpen(false), []);
-
-  const clearAuthError = useCallback(() => setAuthError(null), []);
 
   const updateHearts = useCallback(
     (hearts: number, lastHeartUpdatedAt: string) => {
@@ -249,9 +370,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       authError,
       linkModalOpen,
       linkModalReason,
+      pendingCheckoutPackId,
+      isCheckingOut,
+      checkoutError,
       openLinkModal,
       closeLinkModal,
       clearAuthError,
+      clearCheckoutError,
+      triggerCheckout,
       continueWithGoogle,
       continueWithEmail,
       signOut,
@@ -260,19 +386,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }),
     [
       authError,
+      checkoutError,
       clearAuthError,
+      clearCheckoutError,
       closeLinkModal,
       configured,
       continueWithEmail,
       continueWithGoogle,
       emailSent,
+      isCheckingOut,
       linkModalOpen,
       linkModalReason,
       loading,
       openLinkModal,
+      pendingCheckoutPackId,
       profile,
       refreshProfile,
       signOut,
+      triggerCheckout,
       updateHearts,
     ],
   );

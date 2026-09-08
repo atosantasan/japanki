@@ -130,6 +130,16 @@ export function AuthBar() {
   return (
     <>
       <div className="flex items-center gap-2">
+        {authError && !linkModalOpen ? (
+          <button
+            type="button"
+            onClick={() => openLinkModal("save")}
+            className="text-xs text-sun underline hover:text-sun/80"
+            role="alert"
+          >
+            {t(authError.messageKey)}
+          </button>
+        ) : null}
         <span className="hidden text-xs tracking-wide text-cream/70 sm:inline">
           {loading
             ? "…"

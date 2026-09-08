@@ -27,7 +27,11 @@ export async function GET(request: NextRequest) {
   const supabase = await createServerSupabaseClient();
   const { error } = await supabase.auth.exchangeCodeForSession(code);
   if (!error) {
-    await supabase.rpc("sync_profile");
+    try {
+      await supabase.rpc("sync_profile");
+    } catch {
+      // Client-side AuthProvider will retry profile sync safely
+    }
     return redirectWithClearedCookie(new URL(next, url.origin));
   }
 
