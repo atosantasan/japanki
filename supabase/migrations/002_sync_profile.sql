@@ -5,7 +5,7 @@
 drop function if exists public.sync_profile();
 drop function if exists public.sync_profile(text);
 
-create or replace function public.sync_profile(preferred_language_param text default null)
+create or replace function public.sync_profile(p_preferred_language text default null)
 returns table(
   id uuid,
   is_anonymous boolean,
@@ -13,6 +13,7 @@ returns table(
   hearts integer,
   last_heart_updated_at timestamp with time zone
 ) as $$
+#variable_conflict use_column
 declare
   v_user_id uuid := auth.uid();
   v_is_anonymous boolean;
@@ -24,17 +25,17 @@ begin
 
   select not exists (
     select 1
-    from auth.identities
-    where user_id = v_user_id
-      and provider <> 'anonymous'
+    from auth.identities as ai
+    where ai.user_id = v_user_id
+      and ai.provider <> 'anonymous'
   ) into v_is_anonymous;
 
-  select profiles.preferred_language into v_language
-  from public.profiles
-  where profiles.id = v_user_id;
+  select p.preferred_language into v_language
+  from public.profiles as p
+  where p.id = v_user_id;
 
-  if preferred_language_param is not null then
-    v_language := preferred_language_param;
+  if p_preferred_language is not null then
+    v_language := p_preferred_language;
   end if;
 
   if v_language is null then
@@ -43,19 +44,19 @@ begin
 
   insert into public.profiles (id, is_anonymous, preferred_language, hearts, last_heart_updated_at)
   values (v_user_id, v_is_anonymous, v_language, 5, timezone('utc'::text, now()))
-  on conflict (id) do update
+  on conflict on constraint profiles_pkey do update
     set is_anonymous = excluded.is_anonymous,
         preferred_language = excluded.preferred_language;
 
   return query
     select
-      profiles.id,
-      profiles.is_anonymous,
-      profiles.preferred_language,
-      profiles.hearts,
-      profiles.last_heart_updated_at
-    from public.profiles
-    where profiles.id = v_user_id;
+      p.id,
+      p.is_anonymous,
+      p.preferred_language,
+      p.hearts,
+      p.last_heart_updated_at
+    from public.profiles as p
+    where p.id = v_user_id;
 end;
 $$ language plpgsql security definer set search_path = public;
 

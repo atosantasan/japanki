@@ -124,5 +124,25 @@ describe("OAuth session sync & Stripe automatic redirect (Issue #6)", () => {
       );
       expect(source).toMatch(/autoCheckoutTriggeredRef|checkoutInProgressRef/);
     });
+
+    it("attaches Authorization Bearer token in triggerCheckout when access_token is present", () => {
+      const source = readFileSync(
+        join(srcDir, "components/auth/AuthProvider.tsx"),
+        "utf8",
+      );
+      expect(source).toMatch(/headers\.Authorization\s*=\s*`Bearer \${token}`/);
+    });
+  });
+
+  describe("AC-5: /api/checkout identity linking 403 prevention", () => {
+    it("checks for linked identity providers in /api/checkout and avoids false 403", () => {
+      const source = readFileSync(
+        join(srcDir, "app/api/checkout/route.ts"),
+        "utf8",
+      );
+      expect(source).toMatch(/hasLinkedIdentity/);
+      expect(source).toMatch(/isLinked\s*\?\s*false\s*:\s*Boolean\(profile\?\.is_anonymous/);
+      expect(source).toMatch(/authHeader\?\.startsWith\("Bearer "\)/);
+    });
   });
 });

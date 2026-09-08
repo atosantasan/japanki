@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { canStartCheckout } from "@/lib/billing/checkout-guard";
+import { canStartCheckout, hasLinkedIdentity } from "@/lib/billing/checkout-guard";
 import { getStripe } from "@/lib/billing/stripe";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
@@ -13,7 +13,14 @@ export async function POST(request: Request) {
   }
 
   const userClient = await createServerSupabaseClient();
-  const { data: userData, error: userError } = await userClient.auth.getUser();
+  const authHeader = request.headers.get("authorization");
+  const token = authHeader?.startsWith("Bearer ")
+    ? authHeader.slice(7).trim()
+    : undefined;
+  const { data: userData, error: userError } = token
+    ? await userClient.auth.getUser(token)
+    : await userClient.auth.getUser();
+
   if (userError || !userData.user) {
     return NextResponse.json({ error: "unauthenticated" }, { status: 401 });
   }
@@ -28,9 +35,14 @@ export async function POST(request: Request) {
     .eq("id", userData.user.id)
     .maybeSingle();
 
+  const isLinked = hasLinkedIdentity(identityProviders);
+  const isAnonymous = isLinked
+    ? false
+    : Boolean(profile?.is_anonymous ?? true);
+
   const guard = canStartCheckout({
     userId: userData.user.id,
-    isAnonymous: Boolean(profile?.is_anonymous),
+    isAnonymous,
     identityProviders,
   });
   if (!guard.ok) {
@@ -38,6 +50,12 @@ export async function POST(request: Request) {
   }
 
   const admin = createAdminSupabaseClient();
+  if (isLinked && profile?.is_anonymous) {
+    await admin
+      .from("profiles")
+      .update({ is_anonymous: false })
+      .eq("id", userData.user.id);
+  }
   const { data: pack } = await admin
     .from("content_packs")
     .select("id, is_free, price_usd, stripe_price_id, title")

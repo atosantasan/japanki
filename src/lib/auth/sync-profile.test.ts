@@ -43,7 +43,7 @@ describe("syncProfileSafely", () => {
     expect(mockRpc).not.toHaveBeenCalled();
   });
 
-  it("calls RPC with preferred_language_param when session exists with access_token", async () => {
+  it("calls RPC with p_preferred_language when session exists with access_token", async () => {
     const mockRow = {
       id: "user-123",
       is_anonymous: false,
@@ -72,13 +72,13 @@ describe("syncProfileSafely", () => {
 
     const result = await syncProfileSafely(mockSupabase, "ja");
     expect(mockRpc).toHaveBeenCalledWith("sync_profile", {
-      preferred_language_param: "ja",
+      p_preferred_language: "ja",
     });
     expect(result.data).toEqual(mockRow);
     expect(result.error).toBeNull();
   });
 
-  it("retries without parameters when parameter mismatch (PGRST202 / 400) occurs", async () => {
+  it("retries with legacy parameter and then empty parameters when parameter mismatch (PGRST202 / 400) occurs", async () => {
     const mockRow = {
       id: "user-123",
       is_anonymous: false,
@@ -88,6 +88,15 @@ describe("syncProfileSafely", () => {
     };
     const mockRpc = vi
       .fn()
+      .mockResolvedValueOnce({
+        data: null,
+        error: {
+          code: "PGRST202",
+          message:
+            "Could not find the function sync_profile(p_preferred_language) in the schema cache",
+          status: 400,
+        },
+      })
       .mockResolvedValueOnce({
         data: null,
         error: {
@@ -118,12 +127,46 @@ describe("syncProfileSafely", () => {
     } as unknown as SupabaseMock;
 
     const result = await syncProfileSafely(mockSupabase, "ja");
-    expect(mockRpc).toHaveBeenCalledTimes(2);
+    expect(mockRpc).toHaveBeenCalledTimes(3);
     expect(mockRpc).toHaveBeenNthCalledWith(1, "sync_profile", {
+      p_preferred_language: "ja",
+    });
+    expect(mockRpc).toHaveBeenNthCalledWith(2, "sync_profile", {
       preferred_language_param: "ja",
     });
-    expect(mockRpc).toHaveBeenNthCalledWith(2, "sync_profile", {});
+    expect(mockRpc).toHaveBeenNthCalledWith(3, "sync_profile", {});
     expect(result.data).toEqual(mockRow);
+    expect(result.error).toBeNull();
+  });
+
+  it("safely handles 42702 ambiguous column reference error from RPC without throwing or crashing", async () => {
+    const mockRpc = vi.fn().mockResolvedValue({
+      data: null,
+      error: {
+        code: "42702",
+        message: 'column reference "id" is ambiguous',
+        details: "It could refer to either a PL/pgSQL variable or a table column.",
+        hint: null,
+      },
+    });
+
+    const mockSupabase = {
+      auth: {
+        getSession: vi.fn().mockResolvedValue({
+          data: {
+            session: {
+              access_token: "mock-jwt-token",
+              user: { id: "user-123" },
+            },
+          },
+          error: null,
+        }),
+      },
+      rpc: mockRpc,
+    } as unknown as SupabaseMock;
+
+    const result = await syncProfileSafely(mockSupabase, "ja");
+    expect(result.data).toBeNull();
     expect(result.error).toBeNull();
   });
 

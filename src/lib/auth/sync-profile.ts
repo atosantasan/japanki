@@ -43,7 +43,7 @@ export async function syncProfileSafely(
       return { data: null, error: null };
     }
 
-    const params = locale ? { preferred_language_param: locale } : {};
+    const params = locale ? { p_preferred_language: locale } : {};
     let data: unknown = null;
     let rpcError: unknown = null;
 
@@ -53,6 +53,18 @@ export async function syncProfileSafely(
       rpcError = response.error;
     } catch (callErr) {
       rpcError = callErr;
+    }
+
+    if (rpcError && isParameterMismatchError(rpcError) && locale) {
+      try {
+        const legacyResponse = await supabase.rpc("sync_profile", {
+          preferred_language_param: locale,
+        });
+        data = legacyResponse.data;
+        rpcError = legacyResponse.error;
+      } catch (legacyErr) {
+        rpcError = legacyErr;
+      }
     }
 
     if (rpcError && isParameterMismatchError(rpcError) && locale) {
