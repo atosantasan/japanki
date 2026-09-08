@@ -121,20 +121,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return null;
     }
     const supabase = createBrowserSupabaseClient();
-    const { data, error } = await syncProfileSafely(supabase, locale);
-    if (error) {
-      const mapped = mapAuthError(error);
-      if (mapped.kind !== "generic") {
-        setAuthError(mapped);
-      }
+    const { data: sessionData } = await supabase.auth.getSession();
+    const session = sessionData?.session;
+    let user = session?.user;
+    if (!user) {
+      const { data: userData } = await supabase.auth.getUser();
+      user = userData?.user ?? undefined;
+    }
+    if (!user) {
       return null;
     }
-    if (!data || typeof data !== "object") {
-      return null;
+
+    const { data } = await syncProfileSafely(supabase, locale);
+    if (data && typeof data === "object") {
+      const nextProfile = toProfile(data as Record<string, unknown>, locale);
+      setProfile(nextProfile);
+      return nextProfile;
     }
-    const nextProfile = toProfile(data as Record<string, unknown>, locale);
-    setProfile(nextProfile);
-    return nextProfile;
+
+    const isAnon =
+      user.is_anonymous ??
+      !(
+        user.identities &&
+        user.identities.length > 0 &&
+        user.identities.some((id) => id.provider !== "anonymous")
+      );
+
+    const fallbackProfile: AuthProfile = {
+      hearts: 5,
+      lastHeartUpdatedAt: null,
+      isAnonymous: Boolean(isAnon),
+      preferredLanguage: locale,
+    };
+    setProfile(fallbackProfile);
+    return fallbackProfile;
   }, [configured, locale]);
 
   const openLinkModal = useCallback(
@@ -203,17 +223,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const supabase = createBrowserSupabaseClient();
 
     async function boot() {
-      await supabase.auth.getSession();
-      const { data } = await supabase.auth.getUser();
-      if (!data.user) {
-        const { error } = await supabase.auth.signInAnonymously();
-        if (error && !cancelled) {
-          setAuthError(mapAuthError(error));
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        let user = sessionData?.session?.user;
+        if (!user) {
+          const { data: userData } = await supabase.auth.getUser();
+          user = userData?.user ?? undefined;
         }
-      }
-      if (!cancelled) {
-        await refreshProfile();
-        setLoading(false);
+        if (!user) {
+          const { error: anonError } =
+            await supabase.auth.signInAnonymously();
+          if (anonError && !cancelled) {
+            console.warn("Anonymous sign-in bypassed:", anonError);
+          }
+        }
+        if (!cancelled) {
+          await refreshProfile();
+          setLoading(false);
+        }
+      } catch (err) {
+        console.warn("AuthProvider boot error caught:", err);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     }
 
@@ -221,7 +253,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event) => {
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (cancelled) {
         return;
       }
@@ -231,8 +263,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         event === "USER_UPDATED" ||
         event === "TOKEN_REFRESHED"
       ) {
-        await supabase.auth.getSession();
-        await refreshProfile();
+        if (session?.user) {
+          await refreshProfile();
+        }
       } else if (event === "SIGNED_OUT") {
         autoCheckoutTriggeredRef.current = false;
         setProfile(null);

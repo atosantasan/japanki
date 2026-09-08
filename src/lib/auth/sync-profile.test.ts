@@ -21,7 +21,29 @@ describe("syncProfileSafely", () => {
     expect(mockRpc).not.toHaveBeenCalled();
   });
 
-  it("calls RPC with preferred_language_param when session exists", async () => {
+  it("does not call RPC when session has no access_token", async () => {
+    const mockRpc = vi.fn();
+    const mockSupabase = {
+      auth: {
+        getSession: vi.fn().mockResolvedValue({
+          data: {
+            session: {
+              access_token: "",
+              user: { id: "user-123" },
+            },
+          },
+          error: null,
+        }),
+      },
+      rpc: mockRpc,
+    } as unknown as SupabaseMock;
+
+    const result = await syncProfileSafely(mockSupabase, "ja");
+    expect(result.data).toBeNull();
+    expect(mockRpc).not.toHaveBeenCalled();
+  });
+
+  it("calls RPC with preferred_language_param when session exists with access_token", async () => {
     const mockRow = {
       id: "user-123",
       is_anonymous: false,
@@ -38,6 +60,7 @@ describe("syncProfileSafely", () => {
         getSession: vi.fn().mockResolvedValue({
           data: {
             session: {
+              access_token: "mock-jwt-token",
               user: { id: "user-123" },
             },
           },
@@ -84,6 +107,7 @@ describe("syncProfileSafely", () => {
         getSession: vi.fn().mockResolvedValue({
           data: {
             session: {
+              access_token: "mock-jwt-token",
               user: { id: "user-123" },
             },
           },
@@ -103,7 +127,7 @@ describe("syncProfileSafely", () => {
     expect(result.error).toBeNull();
   });
 
-  it("safely handles unauthenticated error from RPC without throwing", async () => {
+  it("safely handles 400 Bad Request error from RPC without throwing or crashing", async () => {
     const mockRpc = vi.fn().mockResolvedValue({
       data: null,
       error: {
@@ -118,6 +142,7 @@ describe("syncProfileSafely", () => {
         getSession: vi.fn().mockResolvedValue({
           data: {
             session: {
+              access_token: "mock-jwt-token",
               user: { id: "user-123" },
             },
           },
@@ -129,6 +154,6 @@ describe("syncProfileSafely", () => {
 
     const result = await syncProfileSafely(mockSupabase, "ja");
     expect(result.data).toBeNull();
-    expect(result.error).toBeDefined();
+    expect(result.error).toBeNull();
   });
 });

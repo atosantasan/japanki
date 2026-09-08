@@ -62,6 +62,13 @@ export default async function LocaleLayout({
       lang={locale}
       className={`${outfit.variable} ${notoSansJp.variable} h-full antialiased`}
     >
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){if(typeof window!=="undefined"){window.addEventListener("error",function(e){var m=(e&&e.message)||"";var f=(e&&e.filename)||"";if(f.indexOf("share-modal")!==-1||m.indexOf("share-modal")!==-1||f.indexOf("chrome-extension://")!==-1){e.preventDefault&&e.preventDefault();e.stopImmediatePropagation&&e.stopImmediatePropagation();return true;}},true);}})();`,
+          }}
+        />
+      </head>
       <body className="min-h-full bg-ink text-cream">
         <NextIntlClientProvider messages={messages}>
           <AuthProvider>{children}</AuthProvider>

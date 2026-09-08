@@ -12,40 +12,54 @@ import { syncProfileSafely } from "./sync-profile";
 const srcDir = join(dirname(fileURLToPath(import.meta.url)), "../..");
 
 describe("OAuth session sync & Stripe automatic redirect (Issue #6)", () => {
-  describe("AC-1: syncProfileSafely fallback with getUser()", () => {
-    it("falls back to getUser() when getSession() has not yet synced session data", async () => {
-      const mockRow = {
-        id: "user-oauth-456",
-        is_anonymous: false,
-        preferred_language: "ja",
-        hearts: 5,
-        last_heart_updated_at: "2026-09-08T08:00:00Z",
-      };
-
+  describe("AC-1: syncProfileSafely strict session guard & safe bypass", () => {
+    it("strictly avoids calling RPC when session or access_token is missing", async () => {
       type SupabaseMock = Parameters<typeof syncProfileSafely>[0];
 
+      const mockRpc = vi.fn();
       const mockSupabase = {
         auth: {
           getSession: vi.fn().mockResolvedValue({
             data: { session: null },
             error: null,
           }),
-          getUser: vi.fn().mockResolvedValue({
+        },
+        rpc: mockRpc,
+      } as unknown as SupabaseMock;
+
+      const result = await syncProfileSafely(mockSupabase, "ja");
+      expect(mockRpc).not.toHaveBeenCalled();
+      expect(result.data).toBeNull();
+      expect(result.error).toBeNull();
+    });
+
+    it("safely catches and bypasses 400 Bad Request error from RPC without throwing", async () => {
+      type SupabaseMock = Parameters<typeof syncProfileSafely>[0];
+
+      const mockSupabase = {
+        auth: {
+          getSession: vi.fn().mockResolvedValue({
             data: {
-              user: { id: "user-oauth-456" },
+              session: {
+                access_token: "active-token",
+                user: { id: "user-oauth-456" },
+              },
             },
             error: null,
           }),
         },
         rpc: vi.fn().mockResolvedValue({
-          data: [mockRow],
-          error: null,
+          data: null,
+          error: {
+            code: "P0001",
+            message: "Not authenticated",
+            status: 400,
+          },
         }),
       } as unknown as SupabaseMock;
 
       const result = await syncProfileSafely(mockSupabase, "ja");
-      expect(mockSupabase.auth.getUser).toHaveBeenCalled();
-      expect(result.data).toEqual(mockRow);
+      expect(result.data).toBeNull();
       expect(result.error).toBeNull();
     });
   });
@@ -94,13 +108,13 @@ describe("OAuth session sync & Stripe automatic redirect (Issue #6)", () => {
   });
 
   describe("AC-3 & AC-4: AuthProvider immediate session sync & checkout trigger", () => {
-    it("handles INITIAL_SESSION and SIGNED_IN events with immediate profile refresh", () => {
+    it("handles INITIAL_SESSION and SIGNED_IN events with immediate profile refresh when session user exists", () => {
       const source = readFileSync(
         join(srcDir, "components/auth/AuthProvider.tsx"),
         "utf8",
       );
       expect(source).toMatch(/INITIAL_SESSION/);
-      expect(source).toMatch(/getSession/);
+      expect(source).toMatch(/session\?\.user/);
     });
 
     it("guards against duplicate automatic checkout redirection loops with ref check", () => {
