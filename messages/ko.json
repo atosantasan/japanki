@@ -10,7 +10,8 @@
     "cta": "학습 시작",
     "contact": "문의",
     "travelCta": "여행 팩",
-    "buyTravel": "여행 팩 구매"
+    "buyTravel": "여행 팩 구매",
+    "playOwned": "학습 시작"
   },
   "Auth": {
     "guest": "게스트",
@@ -29,7 +30,8 @@
     "linked": "저장됨",
     "checkoutGuard": "이 팩을 구매하려면 계정을 연결하세요",
     "checkoutRedirecting": "결제 화면으로 이동 중입니다…",
-    "checkoutError": "결제를 시작할 수 없습니다. 다시 시도해 주세요."
+    "checkoutError": "결제를 시작할 수 없습니다. 다시 시도해 주세요.",
+    "alreadyPurchased": "이미 구매한 팩입니다"
   },
   "Quiz": {
     "loading": "문제 5개를 준비하는 중…",

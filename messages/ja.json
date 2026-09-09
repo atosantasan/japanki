@@ -10,7 +10,8 @@
     "cta": "学習を始める",
     "contact": "お問い合わせ",
     "travelCta": "トラベルパック",
-    "buyTravel": "トラベルパックを購入"
+    "buyTravel": "トラベルパックを購入",
+    "playOwned": "学習を始める"
   },
   "Auth": {
     "guest": "ゲスト",
@@ -29,7 +30,8 @@
     "linked": "保存しました",
     "checkoutGuard": "このパックを購入するにはアカウントを連携してください",
     "checkoutRedirecting": "決済画面へ移動しています…",
-    "checkoutError": "決済を開始できませんでした。もう一度お試しください。"
+    "checkoutError": "決済を開始できませんでした。もう一度お試しください。",
+    "alreadyPurchased": "既に購入済みのパックです"
   },
   "Quiz": {
     "loading": "5問を準備しています…",

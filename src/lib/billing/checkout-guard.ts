@@ -27,3 +27,27 @@ export function canStartCheckout(input: {
 
   return { ok: true };
 }
+
+export type DuplicatePurchaseGuardResult =
+  | { ok: true }
+  | {
+      ok: false;
+      status: 400;
+      code: "already_purchased";
+      error: "既に購入済みのパックです";
+    };
+
+export function rejectIfAlreadyOwned(
+  alreadyOwned: boolean,
+): DuplicatePurchaseGuardResult {
+  if (alreadyOwned) {
+    return {
+      ok: false,
+      status: 400,
+      code: "already_purchased",
+      error: "既に購入済みのパックです",
+    };
+  }
+
+  return { ok: true };
+}

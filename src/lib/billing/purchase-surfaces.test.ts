@@ -21,8 +21,9 @@ describe("purchase grant surfaces", () => {
       join(srcDir, "app/api/checkout/route.ts"),
       "utf8",
     );
-    expect(source).not.toMatch(/user_purchases/);
     expect(source).not.toMatch(/grantPurchase/);
+    expect(source).not.toMatch(/\.insert\(/);
+    expect(source).toMatch(/user_purchases/);
     expect(source).toMatch(/customer_email/);
     expect(source).toMatch(/customer_creation/);
   });

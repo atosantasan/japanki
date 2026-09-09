@@ -10,7 +10,8 @@
     "cta": "Loslegen",
     "contact": "Kontakt",
     "travelCta": "Reisepaket",
-    "buyTravel": "Reisepaket kaufen"
+    "buyTravel": "Reisepaket kaufen",
+    "playOwned": "Loslegen"
   },
   "Auth": {
     "guest": "Gast",
@@ -29,7 +30,8 @@
     "linked": "Gespeichert",
     "checkoutGuard": "Verknüpfe ein Konto, um dieses Paket zu kaufen",
     "checkoutRedirecting": "Weiterleitung zur Kasse…",
-    "checkoutError": "Bezahlvorgang konnte nicht gestartet werden. Bitte versuche es erneut."
+    "checkoutError": "Bezahlvorgang konnte nicht gestartet werden. Bitte versuche es erneut.",
+    "alreadyPurchased": "Du besitzt dieses Paket bereits."
   },
   "Quiz": {
     "loading": "Fünf Fragen werden vorbereitet…",

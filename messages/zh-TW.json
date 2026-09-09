@@ -10,7 +10,8 @@
     "cta": "開始學習",
     "contact": "聯絡我們",
     "travelCta": "旅行包",
-    "buyTravel": "購買旅行包"
+    "buyTravel": "購買旅行包",
+    "playOwned": "開始學習"
   },
   "Auth": {
     "guest": "訪客",
@@ -29,7 +30,8 @@
     "linked": "已保存",
     "checkoutGuard": "請先連結帳號才能購買此教材包",
     "checkoutRedirecting": "正在前往結帳頁面…",
-    "checkoutError": "無法開始結帳，請再試一次。"
+    "checkoutError": "無法開始結帳，請再試一次。",
+    "alreadyPurchased": "您已購買此教材包"
   },
   "Quiz": {
     "loading": "正在準備五題…",

@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
-import { canStartCheckout, hasLinkedIdentity } from "@/lib/billing/checkout-guard";
+import {
+  canStartCheckout,
+  hasLinkedIdentity,
+  rejectIfAlreadyOwned,
+} from "@/lib/billing/checkout-guard";
 import { getStripe } from "@/lib/billing/stripe";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
@@ -67,6 +71,21 @@ export async function POST(request: Request) {
   }
   if (pack.is_free) {
     return NextResponse.json({ error: "Pack is free" }, { status: 400 });
+  }
+
+  const { data: existingPurchase } = await admin
+    .from("user_purchases")
+    .select("pack_id")
+    .eq("user_id", userData.user.id)
+    .eq("pack_id", packId)
+    .maybeSingle();
+
+  const ownershipGuard = rejectIfAlreadyOwned(Boolean(existingPurchase));
+  if (!ownershipGuard.ok) {
+    return NextResponse.json(
+      { error: ownershipGuard.error, code: ownershipGuard.code },
+      { status: ownershipGuard.status },
+    );
   }
 
   const origin =

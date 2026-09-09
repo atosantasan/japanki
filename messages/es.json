@@ -10,7 +10,8 @@
     "cta": "Empezar",
     "contact": "Contacto",
     "travelCta": "Pack de viaje",
-    "buyTravel": "Comprar pack de viaje"
+    "buyTravel": "Comprar pack de viaje",
+    "playOwned": "Empezar"
   },
   "Auth": {
     "guest": "Invitado",
@@ -29,7 +30,8 @@
     "linked": "Guardado",
     "checkoutGuard": "Vincula una cuenta para comprar este pack",
     "checkoutRedirecting": "Redirigiendo al pago…",
-    "checkoutError": "No se pudo iniciar el pago. Por favor, inténtalo de nuevo."
+    "checkoutError": "No se pudo iniciar el pago. Por favor, inténtalo de nuevo.",
+    "alreadyPurchased": "Ya tienes este pack."
   },
   "Quiz": {
     "loading": "Preparando cinco preguntas…",

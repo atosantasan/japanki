@@ -10,7 +10,8 @@
     "cta": "开始学习",
     "contact": "联系我们",
     "travelCta": "旅行包",
-    "buyTravel": "购买旅行包"
+    "buyTravel": "购买旅行包",
+    "playOwned": "开始学习"
   },
   "Auth": {
     "guest": "访客",
@@ -29,7 +30,8 @@
     "linked": "已保存",
     "checkoutGuard": "请先关联账号才能购买此教材包",
     "checkoutRedirecting": "正在跳转至结算页面…",
-    "checkoutError": "无法启动结算，请重试。"
+    "checkoutError": "无法启动结算，请重试。",
+    "alreadyPurchased": "您已购买此内容包"
   },
   "Quiz": {
     "loading": "正在准备五题…",

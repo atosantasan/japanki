@@ -22,6 +22,7 @@ import {
   getPendingCheckoutPack,
   setPendingCheckoutPack,
 } from "@/lib/billing/pending-checkout";
+import { fetchUserPacks, isPackOwned } from "@/lib/billing/user-packs";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 
@@ -45,6 +46,7 @@ type AuthContextValue = {
   pendingCheckoutPackId: string | null;
   isCheckingOut: boolean;
   checkoutError: string | null;
+  ownedPackIds: string[];
   openLinkModal: (reason?: LinkModalReason, packId?: string) => void;
   closeLinkModal: () => void;
   clearAuthError: () => void;
@@ -114,6 +116,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   });
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  const [ownedPackIds, setOwnedPackIds] = useState<string[]>([]);
   const autoCheckoutTriggeredRef = useRef(false);
 
   const refreshProfile = useCallback(async () => {
@@ -129,8 +132,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       user = userData?.user ?? undefined;
     }
     if (!user) {
+      setOwnedPackIds([]);
       return null;
     }
+
+    const packIds = await fetchUserPacks(supabase);
+    setOwnedPackIds(packIds);
 
     const { data } = await syncProfileSafely(supabase, locale);
     if (data && typeof data === "object") {
@@ -200,12 +207,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const payload = (await response.json()) as {
           url?: string;
           error?: string;
+          code?: string;
         };
         if (
           response.status === 403 &&
           payload.error === "identity_linking_required"
         ) {
           openLinkModal("checkout", packId);
+          setIsCheckingOut(false);
+          return;
+        }
+        if (
+          response.status === 400 &&
+          (payload.code === "already_purchased" ||
+            payload.error === "already_purchased" ||
+            payload.error === "既に購入済みのパックです")
+        ) {
+          await refreshProfile();
+          setCheckoutError("already_purchased");
           setIsCheckingOut(false);
           return;
         }
@@ -221,7 +240,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setIsCheckingOut(false);
       }
     },
-    [locale, openLinkModal],
+    [locale, openLinkModal, refreshProfile],
   );
 
   useEffect(() => {
@@ -279,6 +298,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } else if (event === "SIGNED_OUT") {
         autoCheckoutTriggeredRef.current = false;
         setProfile(null);
+        setOwnedPackIds([]);
       }
     });
 
@@ -305,6 +325,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const targetPack =
       pendingCheckoutPackId || getPendingCheckoutPack(searchParams);
     if (targetPack) {
+      if (isPackOwned(ownedPackIds, targetPack)) {
+        autoCheckoutTriggeredRef.current = true;
+        void (async () => {
+          clearPendingCheckoutPack();
+          setPendingCheckoutPackId(null);
+        })();
+        return;
+      }
       autoCheckoutTriggeredRef.current = true;
       void (async () => {
         setLinkModalOpen(false);
@@ -312,7 +340,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         await triggerCheckout(targetPack);
       })();
     }
-  }, [profile, isCheckingOut, pendingCheckoutPackId, triggerCheckout]);
+  }, [profile, isCheckingOut, ownedPackIds, pendingCheckoutPackId, triggerCheckout]);
 
   const continueWithGoogle = useCallback(
     async (mode: "link" | "existing") => {
@@ -429,6 +457,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       pendingCheckoutPackId,
       isCheckingOut,
       checkoutError,
+      ownedPackIds,
       openLinkModal,
       closeLinkModal,
       clearAuthError,
@@ -454,6 +483,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       linkModalOpen,
       linkModalReason,
       loading,
+      ownedPackIds,
       openLinkModal,
       pendingCheckoutPackId,
       profile,

@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { Link } from "@/i18n/navigation";
+import { isPackOwned } from "@/lib/billing/user-packs";
 
 export function PurchaseButton({ packId }: { packId: string }) {
   const tHome = useTranslations("HomePage");
@@ -12,12 +14,29 @@ export function PurchaseButton({ packId }: { packId: string }) {
     openLinkModal,
     isCheckingOut: globalCheckingOut,
     checkoutError: globalCheckoutError,
+    ownedPackIds,
+    refreshProfile,
   } = useAuth();
   const [localBusy, setLocalBusy] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
 
   const isBusy = localBusy || globalCheckingOut;
   const checkoutError = localError || globalCheckoutError;
+  const isOwned = isPackOwned(ownedPackIds, packId);
+
+  function checkoutErrorMessage(error: string): string {
+    if (
+      error === "checkout_failed" ||
+      error === "already_purchased" ||
+      error === "既に購入済みのパックです"
+    ) {
+      return error === "already_purchased" ||
+        error === "既に購入済みのパックです"
+        ? tAuth("alreadyPurchased")
+        : tAuth("checkoutError");
+    }
+    return error;
+  }
 
   async function startCheckout() {
     setLocalBusy(true);
@@ -32,12 +51,24 @@ export function PurchaseButton({ packId }: { packId: string }) {
       const payload = (await response.json()) as {
         url?: string;
         error?: string;
+        code?: string;
       };
       if (
         response.status === 403 &&
         payload.error === "identity_linking_required"
       ) {
         openLinkModal("checkout", packId);
+        setLocalBusy(false);
+        return;
+      }
+      if (
+        response.status === 400 &&
+        (payload.code === "already_purchased" ||
+          payload.error === "already_purchased" ||
+          payload.error === "既に購入済みのパックです")
+      ) {
+        await refreshProfile();
+        setLocalError(tAuth("alreadyPurchased"));
         setLocalBusy(false);
         return;
       }
@@ -53,6 +84,17 @@ export function PurchaseButton({ packId }: { packId: string }) {
     }
   }
 
+  if (isOwned) {
+    return (
+      <Link
+        href={`/quiz/${packId}`}
+        className="inline-flex w-fit items-center rounded-full border border-cream/30 px-6 py-3 text-sm font-semibold tracking-wide text-cream hover:border-cream/60"
+      >
+        {tHome("playOwned")}
+      </Link>
+    );
+  }
+
   return (
     <div className="flex flex-col items-start gap-2">
       <button
@@ -65,9 +107,7 @@ export function PurchaseButton({ packId }: { packId: string }) {
       </button>
       {checkoutError ? (
         <p className="text-xs text-sun" role="alert">
-          {checkoutError === "checkout_failed"
-            ? tAuth("checkoutError")
-            : checkoutError}
+          {checkoutErrorMessage(checkoutError)}
         </p>
       ) : null}
     </div>

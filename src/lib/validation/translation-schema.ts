@@ -63,6 +63,7 @@ export const AppMessagesSchema = z.object({
     contact: requiredText,
     travelCta: requiredText,
     buyTravel: requiredText,
+    playOwned: requiredText,
   }),
   Auth: z.object({
     guest: requiredText,
@@ -82,6 +83,7 @@ export const AppMessagesSchema = z.object({
     checkoutGuard: requiredText,
     checkoutRedirecting: requiredText,
     checkoutError: requiredText,
+    alreadyPurchased: requiredText,
   }),
   Quiz: z.object({
     loading: requiredText,

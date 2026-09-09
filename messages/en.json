@@ -10,7 +10,8 @@
     "cta": "Start learning",
     "contact": "Contact",
     "travelCta": "Travel pack",
-    "buyTravel": "Buy travel pack"
+    "buyTravel": "Buy travel pack",
+    "playOwned": "Start learning"
   },
   "Auth": {
     "guest": "Guest",
@@ -29,7 +30,8 @@
     "linked": "Saved",
     "checkoutGuard": "Link an account to buy this pack",
     "checkoutRedirecting": "Redirecting to checkout…",
-    "checkoutError": "Could not start checkout. Please try again."
+    "checkoutError": "Could not start checkout. Please try again.",
+    "alreadyPurchased": "You already own this pack."
   },
   "Quiz": {
     "loading": "Preparing five questions…",

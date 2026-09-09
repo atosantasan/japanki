@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { canStartCheckout } from "@/lib/billing/checkout-guard";
+import {
+  canStartCheckout,
+  rejectIfAlreadyOwned,
+} from "@/lib/billing/checkout-guard";
 
 describe("canStartCheckout", () => {
   it("rejects missing auth", () => {
@@ -48,5 +51,20 @@ describe("canStartCheckout", () => {
         identityProviders: ["anonymous", "google"],
       }),
     ).toEqual({ ok: true });
+  });
+});
+
+describe("rejectIfAlreadyOwned", () => {
+  it("blocks checkout with 400 when the pack is already owned", () => {
+    expect(rejectIfAlreadyOwned(true)).toEqual({
+      ok: false,
+      status: 400,
+      code: "already_purchased",
+      error: "既に購入済みのパックです",
+    });
+  });
+
+  it("allows checkout when the pack is not owned", () => {
+    expect(rejectIfAlreadyOwned(false)).toEqual({ ok: true });
   });
 });
