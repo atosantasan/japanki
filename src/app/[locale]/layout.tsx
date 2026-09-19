@@ -4,6 +4,7 @@ import { getMessages, setRequestLocale } from "next-intl/server";
 import { Noto_Sans_JP, Outfit } from "next/font/google";
 import { notFound } from "next/navigation";
 import { AuthProvider } from "@/components/auth/AuthProvider";
+import { WarmQuizApis } from "@/components/quiz/WarmQuizApis";
 import { routing } from "@/i18n/routing";
 import "../globals.css";
 
@@ -71,7 +72,10 @@ export default async function LocaleLayout({
       </head>
       <body className="min-h-full bg-ink text-cream">
         <NextIntlClientProvider messages={messages}>
-          <AuthProvider>{children}</AuthProvider>
+          <AuthProvider>
+            <WarmQuizApis />
+            {children}
+          </AuthProvider>
         </NextIntlClientProvider>
       </body>
     </html>

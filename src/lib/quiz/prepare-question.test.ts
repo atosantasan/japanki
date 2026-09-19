@@ -35,21 +35,23 @@ const keepOrder = () => 0.99;
 
 describe("prepareQuestion", () => {
   it("uses English choices and prompt when locale is ja", () => {
-    const result = prepareQuestion(validPhrase, "ja", keepOrder);
+    const result = prepareQuestion(validPhrase, "ja", "Thank you", keepOrder);
 
     expect(result.prompt).toBe(validPhrase.translations.en);
     expect(result.choices).toEqual([...validPhrase.choices_by_lang.en]);
     expect(result.choices.every((choice) => typeof choice === "string")).toBe(
       true,
     );
+    expect(result.correctChoiceText).toBe("Thank you");
     expect(result).not.toHaveProperty("correctIndex");
   });
 
   it("uses English choices and prompt when locale is en", () => {
-    const result = prepareQuestion(validPhrase, "en", keepOrder);
+    const result = prepareQuestion(validPhrase, "en", "Thank you", keepOrder);
 
     expect(result.prompt).toBe("Thank you");
     expect(result.choices).toEqual(["Thank you", "Sorry", "Hello"]);
+    expect(result.correctChoiceText).toBe("Thank you");
     expect(result).not.toHaveProperty("correctIndex");
   });
 });

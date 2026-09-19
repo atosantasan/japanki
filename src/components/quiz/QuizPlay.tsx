@@ -4,20 +4,16 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { buildQuizQueue } from "@/lib/quiz/build-queue";
-import { prepareQuestion } from "@/lib/quiz/prepare-question";
-import { createQuizSession } from "@/lib/quiz/rpc-client";
+import { requestStartQuiz } from "@/lib/quiz/start-quiz-client";
 import { requestSubmitAnswer } from "@/lib/quiz/submit-answer-client";
 import {
   playHtmlAudio,
   playPhraseAudio,
   playWebAudioFallback,
 } from "@/lib/quiz/phrase-audio";
-import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { shouldShowHeartsEmpty } from "@/lib/hearts/recovery";
 import type { SupportedLocale } from "@/lib/i18n/locales";
-import { PublicPhraseRecordSchema } from "@/lib/validation/translation-schema";
 import type { PreparedQuestion } from "@/lib/quiz/prepare-question";
 
 type QuizPlayProps = {
@@ -29,7 +25,7 @@ type Feedback = "correct" | "incorrect" | null;
 export function QuizPlay({ packId }: QuizPlayProps) {
   const t = useTranslations("Quiz");
   const locale = useLocale() as SupportedLocale;
-  const { configured, profile, refreshProfile, loading: authLoading, updateHearts } = useAuth();
+  const { configured, profile, loading: authLoading, updateHearts } = useAuth();
   const [loading, setLoading] = useState(true);
   const [errorKey, setErrorKey] = useState<
     "notConfigured" | "paidLocked" | "startError" | null
@@ -40,7 +36,6 @@ export function QuizPlay({ packId }: QuizPlayProps) {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<Feedback>(null);
   const [submitError, setSubmitError] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
   const [revealedCorrectText, setRevealedCorrectText] = useState<string | null>(
     null,
   );
@@ -71,61 +66,14 @@ export function QuizPlay({ packId }: QuizPlayProps) {
       }
 
       try {
-        const supabase = createBrowserSupabaseClient();
-        const rpcClient = {
-          rpc: (fn: string, args: Record<string, string>) =>
-            supabase.rpc(fn, args),
-        };
-        const synced = await refreshProfile();
+        const started = await requestStartQuiz({ packId, locale });
         if (cancelled) {
           return;
         }
-        setHearts(synced?.hearts ?? 5);
-
-        const session = await createQuizSession(rpcClient, packId);
-        const phrasesResponse = await fetch(
-          `/api/phrases?pack_id=${encodeURIComponent(packId)}`,
-          { credentials: "include" },
-        );
-        const phrasesJson: unknown = await phrasesResponse.json();
-        if (cancelled) {
-          return;
-        }
-        if (phrasesResponse.status === 403) {
-          setErrorKey("paidLocked");
-          setLoading(false);
-          return;
-        }
-        if (
-          !phrasesResponse.ok ||
-          !phrasesJson ||
-          typeof phrasesJson !== "object"
-        ) {
-          throw new Error("phrases");
-        }
-        const parsedPhrases = PublicPhraseRecordSchema.array().parse(
-          (phrasesJson as { phrases?: unknown }).phrases,
-        );
-
-        const { data: assigned, error: assignedError } = await supabase
-          .from("quiz_session_questions")
-          .select("phrase_id, position")
-          .eq("session_id", session.sessionId);
-
-        if (assignedError || !assigned) {
-          throw new Error("assigned");
-        }
-
-        const ordered = buildQuizQueue({
-          packId,
-          assigned,
-          phrases: parsedPhrases,
-        });
-        if (cancelled) {
-          return;
-        }
-        setSessionId(session.sessionId);
-        setQueue(ordered.map((phrase) => prepareQuestion(phrase, locale)));
+        setHearts(started.remainingHearts);
+        updateHearts(started.remainingHearts, started.updatedAt);
+        setSessionId(started.sessionId);
+        setQueue(started.questions);
         setIndex(0);
         setFeedback(null);
         setErrorKey(null);
@@ -148,18 +96,7 @@ export function QuizPlay({ packId }: QuizPlayProps) {
     return () => {
       cancelled = true;
     };
-  }, [authLoading, locale, packId, refreshProfile]);
-
-  useEffect(() => {
-    if (!sessionId) {
-      return;
-    }
-    void fetch("/api/quiz/submit-answer", {
-      method: "GET",
-      cache: "no-store",
-      credentials: "include",
-    });
-  }, [sessionId]);
+  }, [authLoading, locale, packId, updateHearts]);
 
   const currentId = current?.phrase.id ?? null;
   if (currentId !== trackedAudioId) {
@@ -206,7 +143,7 @@ export function QuizPlay({ packId }: QuizPlayProps) {
   }, [playCurrent]);
 
   const onChoose = useCallback(
-    async (selectedIndex: number) => {
+    (selectedIndex: number) => {
       if (!current || !sessionId || feedback || submittingRef.current) {
         return;
       }
@@ -215,30 +152,29 @@ export function QuizPlay({ packId }: QuizPlayProps) {
         return;
       }
       submittingRef.current = true;
-      setSubmitting(true);
-      try {
-        const result = await requestSubmitAnswer({
-          sessionId,
-          phraseId: current.phrase.id,
-          selectedChoiceText: selectedText,
-          locale,
+      const isCorrect = selectedText === current.correctChoiceText;
+      setSubmitError(false);
+      setFeedback(isCorrect ? "correct" : "incorrect");
+      setRevealedCorrectText(current.correctChoiceText);
+      void requestSubmitAnswer({
+        sessionId,
+        phraseId: current.phrase.id,
+        selectedChoiceText: selectedText,
+        locale,
+      })
+        .then((result) => {
+          setHearts(result.remainingHearts);
+          updateHearts(result.remainingHearts, result.updatedAt);
+        })
+        .catch(() => {
+          setSubmitError(true);
         });
-        setSubmitError(false);
-        setFeedback(result.isCorrect ? "correct" : "incorrect");
-        setRevealedCorrectText(result.correctChoiceText);
-        setHearts(result.remainingHearts);
-        updateHearts(result.remainingHearts, result.updatedAt);
-      } catch {
-        setSubmitError(true);
-      } finally {
-        submittingRef.current = false;
-        setSubmitting(false);
-      }
     },
     [current, feedback, locale, sessionId, updateHearts],
   );
 
   const goNext = useCallback(() => {
+    submittingRef.current = false;
     setFeedback(null);
     setRevealedCorrectText(null);
     setIndex((value) => value + 1);
@@ -326,7 +262,7 @@ export function QuizPlay({ packId }: QuizPlayProps) {
                 <button
                   key={choice}
                   type="button"
-                  disabled={Boolean(feedback) || submitting}
+                  disabled={Boolean(feedback)}
                   onClick={() => void onChoose(choiceIndex)}
                   className={`rounded-2xl border px-5 py-4 text-left text-lg transition ${
                     selected

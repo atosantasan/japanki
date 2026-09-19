@@ -17,7 +17,7 @@ describe("QuizPlay hearts empty warning", () => {
   });
 
   it("does not disable answer buttons when hearts are empty", () => {
-    expect(source).toMatch(/disabled=\{Boolean\(feedback\) \|\| submitting\}/);
+    expect(source).toMatch(/disabled=\{Boolean\(feedback\)\}/);
     expect(source).not.toMatch(/disabled=\{.*hearts/);
   });
 
@@ -26,5 +26,17 @@ describe("QuizPlay hearts empty warning", () => {
     expect(source).toMatch(/catch/);
     expect(source).toMatch(/requestSubmitAnswer/);
     expect(source).toMatch(/gradeError/);
+  });
+
+  it("shows local feedback before waiting for submit-answer", () => {
+    const choose = source.slice(
+      source.indexOf("onChoose"),
+      source.indexOf("goNext"),
+    );
+    expect(choose).toMatch(/selectedText === current.correctChoiceText/);
+    expect(choose.indexOf("setFeedback")).toBeLessThan(
+      choose.indexOf("requestSubmitAnswer"),
+    );
+    expect(choose).not.toMatch(/await requestSubmitAnswer/);
   });
 });

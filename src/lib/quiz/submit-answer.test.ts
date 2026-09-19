@@ -232,12 +232,13 @@ describe("submit-answer latency", () => {
     expect(source).not.toMatch(/isPhraseAssigned/);
   });
 
-  it("warms the grading API after a quiz session starts", () => {
+  it("warms quiz APIs from the shared layout helper", () => {
     const source = readFileSync(
-      join(srcDir, "components/quiz/QuizPlay.tsx"),
+      join(srcDir, "components/quiz/WarmQuizApis.tsx"),
       "utf8",
     );
+    expect(source).toMatch(/\/api\/quiz\/start/);
+    expect(source).toMatch(/\/api\/quiz\/submit-answer/);
     expect(source).toMatch(/method: "GET"/);
-    expect(source).toMatch(/submittingRef/);
   });
 });

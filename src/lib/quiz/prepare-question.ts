@@ -7,11 +7,13 @@ export type PreparedQuestion = {
   phrase: PublicPhraseRecord;
   prompt: string;
   choices: string[];
+  correctChoiceText: string;
 };
 
 export function prepareQuestion(
   phrase: PublicPhraseRecord,
   locale: SupportedLocale,
+  correctChoiceText: string,
   random: RandomFn = Math.random,
 ): PreparedQuestion {
   const contentLocale = toContentLocale(locale);
@@ -21,5 +23,6 @@ export function prepareQuestion(
     phrase,
     prompt: phrase.translations[contentLocale],
     choices: shuffleChoiceOrder(choices, random),
+    correctChoiceText,
   };
 }
