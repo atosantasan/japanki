@@ -11,6 +11,13 @@
 2. 非同期完了は `checkout.session.async_payment_succeeded` で付与する。
 
 ## 3. 受入条件（Acceptance Criteria）
-- [ ] unpaid の completed では購入を付与しないこと。
-- [ ] paid の async_payment_succeeded では購入を付与すること。
-- [ ] Success URL からの付与を行わないこと。
+- [x] unpaid の completed では購入を付与しないこと。
+- [x] paid の async_payment_succeeded では購入を付与すること。
+- [x] Success URL からの付与を行わないこと。
+
+## 4. 今回の実施内容（ローカル実装・未コミット / Human Gate 待ち）
+- `checkout.session.completed` と `checkout.session.async_payment_succeeded` のみ購入処理対象。
+- `payment_status !== "paid"` では `grantPurchase` しない。
+- Success URL からの付与は行わない（既存方針維持）。
+- 残作業: 改修コード未コミット、Stripe Dashboard で `async_payment_succeeded` の Webhook 購読追加が必要。
+- GitHub コメント: https://github.com/atosantasan/japanki/issues/9#issuecomment-5740949743
