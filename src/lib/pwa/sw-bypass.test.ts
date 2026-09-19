@@ -34,6 +34,14 @@ describe("shouldBypassServiceWorkerCache", () => {
     ).toBe(true);
   });
 
+  it("bypasses same-origin API routes so grading is not queued by the worker", () => {
+    expect(
+      shouldBypassServiceWorkerCache(
+        new URL("https://japanki.example/api/quiz/submit-answer"),
+      ),
+    ).toBe(true);
+  });
+
   it("does not bypass same-origin app pages or font CDNs", () => {
     expect(shouldBypassServiceWorkerCache(new URL("https://japanki.example/ja"))).toBe(
       false,

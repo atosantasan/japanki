@@ -26,12 +26,20 @@ export type GradePhrase = {
   correct_choice_index: unknown;
 };
 
+export type GradeContext = {
+  ownerId: string | null;
+  assigned: boolean;
+  phrase: GradePhrase | null;
+  hearts: ConsumeHeartResult | null;
+};
+
 export type SubmitAnswerLoader = {
   getUser: () => Promise<{ id: string } | null>;
-  getSessionOwner: (sessionId: string) => Promise<string | null>;
-  isPhraseAssigned: (sessionId: string, phraseId: string) => Promise<boolean>;
-  getPhrase: (phraseId: string) => Promise<GradePhrase | null>;
-  getHearts: (userId: string) => Promise<ConsumeHeartResult>;
+  loadGradeContext: (
+    sessionId: string,
+    phraseId: string,
+    userId: string,
+  ) => Promise<GradeContext>;
   consumeHeart: (
     sessionId: string,
     phraseId: string,
@@ -56,22 +64,25 @@ export async function submitAnswerForRequest(
     return { status: 401, body: { error: "unauthenticated" } };
   }
 
-  const ownerId = await loader.getSessionOwner(input.sessionId);
-  if (!ownerId || ownerId !== user.id) {
+  const context = await loader.loadGradeContext(
+    input.sessionId,
+    input.phraseId,
+    user.id,
+  );
+  if (!context.ownerId || context.ownerId !== user.id) {
     return { status: 403, body: { error: "forbidden" } };
   }
-
-  const assigned = await loader.isPhraseAssigned(input.sessionId, input.phraseId);
-  if (!assigned) {
+  if (!context.assigned) {
     return { status: 400, body: { error: "phrase not assigned" } };
   }
-
-  const phrase = await loader.getPhrase(input.phraseId);
-  if (!phrase) {
+  if (!context.phrase) {
     return { status: 404, body: { error: "phrase not found" } };
   }
+  if (!context.hearts) {
+    return { status: 500, body: { error: "Unable to grade answer" } };
+  }
 
-  const parsed = PhraseGradeSchema.safeParse(phrase);
+  const parsed = PhraseGradeSchema.safeParse(context.phrase);
   if (!parsed.success) {
     console.error("Phrase grade payload failed Zod validation");
     return { status: 500, body: { error: "Invalid phrase data" } };
@@ -91,7 +102,7 @@ export async function submitAnswerForRequest(
   }
 
   const hearts = graded.isCorrect
-    ? await loader.getHearts(user.id)
+    ? context.hearts
     : await loader.consumeHeart(input.sessionId, input.phraseId);
 
   return {

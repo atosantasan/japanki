@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it, vi } from "vitest";
 import { submitAnswerForRequest } from "@/lib/quiz/submit-answer";
 
@@ -17,9 +20,27 @@ const phrase = {
 
 const sessionId = "11111111-1111-4111-8111-111111111111";
 const phraseId = "22222222-2222-4222-8222-222222222222";
+const hearts = {
+  remainingHearts: 5,
+  updatedAt: "2026-09-19T00:00:00Z",
+};
+
+function ownedContext(overrides?: {
+  ownerId?: string | null;
+  assigned?: boolean;
+  phrase?: typeof phrase | null;
+}) {
+  return {
+    ownerId: overrides?.ownerId === undefined ? "user-1" : overrides.ownerId,
+    assigned: overrides?.assigned ?? true,
+    phrase: overrides && "phrase" in overrides ? overrides.phrase : phrase,
+    hearts,
+  };
+}
 
 describe("submitAnswerForRequest", () => {
   it("returns 401 when the user is missing", async () => {
+    const loadGradeContext = vi.fn();
     const result = await submitAnswerForRequest(
       {
         sessionId,
@@ -29,15 +50,13 @@ describe("submitAnswerForRequest", () => {
       },
       {
         getUser: vi.fn().mockResolvedValue(null),
-        getSessionOwner: vi.fn(),
-        isPhraseAssigned: vi.fn(),
-        getPhrase: vi.fn(),
-        getHearts: vi.fn(),
+        loadGradeContext,
         consumeHeart: vi.fn(),
       },
     );
 
     expect(result.status).toBe(401);
+    expect(loadGradeContext).not.toHaveBeenCalled();
   });
 
   it("returns 403 when the session belongs to another user", async () => {
@@ -50,10 +69,7 @@ describe("submitAnswerForRequest", () => {
       },
       {
         getUser: vi.fn().mockResolvedValue({ id: "user-1" }),
-        getSessionOwner: vi.fn().mockResolvedValue("user-2"),
-        isPhraseAssigned: vi.fn(),
-        getPhrase: vi.fn(),
-        getHearts: vi.fn(),
+        loadGradeContext: vi.fn().mockResolvedValue(ownedContext({ ownerId: "user-2" })),
         consumeHeart: vi.fn(),
       },
     );
@@ -71,10 +87,7 @@ describe("submitAnswerForRequest", () => {
       },
       {
         getUser: vi.fn().mockResolvedValue({ id: "user-1" }),
-        getSessionOwner: vi.fn().mockResolvedValue("user-1"),
-        isPhraseAssigned: vi.fn().mockResolvedValue(false),
-        getPhrase: vi.fn(),
-        getHearts: vi.fn(),
+        loadGradeContext: vi.fn().mockResolvedValue(ownedContext({ assigned: false })),
         consumeHeart: vi.fn(),
       },
     );
@@ -84,6 +97,7 @@ describe("submitAnswerForRequest", () => {
 
   it("grades a correct answer without consuming a heart", async () => {
     const consumeHeart = vi.fn();
+    const loadGradeContext = vi.fn().mockResolvedValue(ownedContext());
     const result = await submitAnswerForRequest(
       {
         sessionId,
@@ -93,17 +107,12 @@ describe("submitAnswerForRequest", () => {
       },
       {
         getUser: vi.fn().mockResolvedValue({ id: "user-1" }),
-        getSessionOwner: vi.fn().mockResolvedValue("user-1"),
-        isPhraseAssigned: vi.fn().mockResolvedValue(true),
-        getPhrase: vi.fn().mockResolvedValue(phrase),
-        getHearts: vi.fn().mockResolvedValue({
-          remainingHearts: 5,
-          updatedAt: "2026-09-19T00:00:00Z",
-        }),
+        loadGradeContext,
         consumeHeart,
       },
     );
 
+    expect(loadGradeContext).toHaveBeenCalledWith(sessionId, phraseId, "user-1");
     expect(consumeHeart).not.toHaveBeenCalled();
     expect(result).toEqual({
       status: 200,
@@ -130,10 +139,7 @@ describe("submitAnswerForRequest", () => {
       },
       {
         getUser: vi.fn().mockResolvedValue({ id: "user-1" }),
-        getSessionOwner: vi.fn().mockResolvedValue("user-1"),
-        isPhraseAssigned: vi.fn().mockResolvedValue(true),
-        getPhrase: vi.fn().mockResolvedValue(phrase),
-        getHearts: vi.fn(),
+        loadGradeContext: vi.fn().mockResolvedValue(ownedContext()),
         consumeHeart,
       },
     );
@@ -174,6 +180,7 @@ describe("requestSubmitAnswer", () => {
 
     expect(fetchMock).toHaveBeenCalledWith("/api/quiz/submit-answer", {
       method: "POST",
+      cache: "no-store",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -208,5 +215,29 @@ describe("requestSubmitAnswer", () => {
       }),
     ).rejects.toThrow(/Unable to grade answer/);
     vi.unstubAllGlobals();
+  });
+});
+
+describe("submit-answer latency", () => {
+  const srcDir = join(dirname(fileURLToPath(import.meta.url)), "../..");
+
+  it("loads session, assignment, phrase, and hearts in one Promise.all", () => {
+    const source = readFileSync(
+      join(srcDir, "app/api/quiz/submit-answer/route.ts"),
+      "utf8",
+    );
+    expect(source).toMatch(/Promise\.all\(/);
+    expect(source).toMatch(/export async function GET/);
+    expect(source).not.toMatch(/getSessionOwner/);
+    expect(source).not.toMatch(/isPhraseAssigned/);
+  });
+
+  it("warms the grading API after a quiz session starts", () => {
+    const source = readFileSync(
+      join(srcDir, "components/quiz/QuizPlay.tsx"),
+      "utf8",
+    );
+    expect(source).toMatch(/method: "GET"/);
+    expect(source).toMatch(/submittingRef/);
   });
 });

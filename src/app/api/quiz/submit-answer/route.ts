@@ -1,13 +1,24 @@
 import { NextResponse } from "next/server";
 import { consumeHeart } from "@/lib/quiz/rpc-client";
+import { recoveredHeartCount } from "@/lib/hearts/recovery";
 import {
   SubmitAnswerBodySchema,
   submitAnswerForRequest,
+  type GradeContext,
   type SubmitAnswerLoader,
 } from "@/lib/quiz/submit-answer";
-import { recoveredHeartCount } from "@/lib/hearts/recovery";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+
+function toUpdatedAt(value: unknown): string | null {
+  if (typeof value === "string" && value.length > 0) {
+    return value;
+  }
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+  return null;
+}
 
 async function createSubmitAnswerLoader(
   request: Request,
@@ -29,59 +40,61 @@ async function createSubmitAnswerLoader(
       }
       return { id: data.user.id };
     },
-    async getSessionOwner(sessionId) {
-      const { data, error } = await userClient
-        .from("quiz_sessions")
-        .select("user_id")
-        .eq("id", sessionId)
-        .maybeSingle();
-      if (error) {
-        throw error;
+    async loadGradeContext(sessionId, phraseId, userId): Promise<GradeContext> {
+      const [sessionRes, assignedRes, phraseRes, heartsRes] = await Promise.all([
+        adminClient
+          .from("quiz_sessions")
+          .select("user_id")
+          .eq("id", sessionId)
+          .maybeSingle(),
+        adminClient
+          .from("quiz_session_questions")
+          .select("id")
+          .eq("session_id", sessionId)
+          .eq("phrase_id", phraseId)
+          .maybeSingle(),
+        adminClient
+          .from("phrases")
+          .select("choices_by_lang, correct_choice_index")
+          .eq("id", phraseId)
+          .maybeSingle(),
+        adminClient
+          .from("profiles")
+          .select("hearts, last_heart_updated_at")
+          .eq("id", userId)
+          .maybeSingle(),
+      ]);
+
+      if (sessionRes.error) {
+        throw sessionRes.error;
       }
-      return data?.user_id ?? null;
-    },
-    async isPhraseAssigned(sessionId, phraseId) {
-      const { data, error } = await userClient
-        .from("quiz_session_questions")
-        .select("id")
-        .eq("session_id", sessionId)
-        .eq("phrase_id", phraseId)
-        .maybeSingle();
-      if (error) {
-        throw error;
+      if (assignedRes.error) {
+        throw assignedRes.error;
       }
-      return Boolean(data);
-    },
-    async getPhrase(phraseId) {
-      const { data, error } = await adminClient
-        .from("phrases")
-        .select("choices_by_lang, correct_choice_index")
-        .eq("id", phraseId)
-        .maybeSingle();
-      if (error) {
-        throw error;
+      if (phraseRes.error) {
+        throw phraseRes.error;
       }
-      return data;
-    },
-    async getHearts(userId) {
-      const { data, error } = await userClient
-        .from("profiles")
-        .select("hearts, last_heart_updated_at")
-        .eq("id", userId)
-        .maybeSingle();
-      if (error || !data) {
-        throw error ?? new Error("profile not found");
+      if (heartsRes.error) {
+        throw heartsRes.error;
       }
-      const updatedAt =
-        typeof data.last_heart_updated_at === "string"
-          ? data.last_heart_updated_at
-          : new Date(data.last_heart_updated_at).toISOString();
+
+      const updatedAt = toUpdatedAt(heartsRes.data?.last_heart_updated_at);
+      const storedHearts = heartsRes.data?.hearts;
+
       return {
-        remainingHearts: recoveredHeartCount({
-          storedHearts: data.hearts,
-          lastHeartUpdatedAt: updatedAt,
-        }),
-        updatedAt,
+        ownerId: sessionRes.data?.user_id ?? null,
+        assigned: Boolean(assignedRes.data),
+        phrase: phraseRes.data,
+        hearts:
+          typeof storedHearts === "number" && updatedAt
+            ? {
+                remainingHearts: recoveredHeartCount({
+                  storedHearts,
+                  lastHeartUpdatedAt: updatedAt,
+                }),
+                updatedAt,
+              }
+            : null,
       };
     },
     async consumeHeart(sessionId, phraseId) {
@@ -94,6 +107,10 @@ async function createSubmitAnswerLoader(
       );
     },
   };
+}
+
+export async function GET() {
+  return new NextResponse(null, { status: 204 });
 }
 
 export async function POST(request: Request) {
