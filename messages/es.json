@@ -44,6 +44,7 @@
     "home": "Volver al inicio",
     "paidLocked": "Este pack requiere compra.",
     "startError": "No se pudo iniciar este pack.",
+    "gradeError": "No se pudo calificar esta respuesta. Inténtalo de nuevo.",
     "heartsEmpty": "Sin corazones. Se recargan con el tiempo.",
     "notConfigured": "Supabase aún no está configurado.",
     "audioFallback": "El audio de la frase aún no está disponible; Japanki reproduce un tono generado."
