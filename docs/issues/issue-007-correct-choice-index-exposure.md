@@ -11,6 +11,14 @@
 2. 正誤判定をサーバー側 RPC/API（`submit_answer` 等）へ移管する。
 
 ## 3. 受入条件（Acceptance Criteria）
-- [ ] 公開フレーズ payload に `correct_choice_index` が含まれないこと。
-- [ ] サーバーが選択テキストで正誤判定すること。
-- [ ] 誤答時のみハート減算すること。
+- [x] 公開フレーズ payload に `correct_choice_index` が含まれないこと。
+- [x] サーバーが選択テキストで正誤判定すること。
+- [x] 誤答時のみハート減算すること。
+
+## 4. 今回の実施内容（ローカル実装・未コミット / Human Gate 待ち）
+- `PublicPhraseRecordSchema` で `correct_choice_index` を omit。`GET /api/phrases` の SELECT からも除外。
+- 表示シャッフルは `shuffleChoiceOrder`（正解インデックス非依存）。
+- RPC `submit_answer` が所有権・割当 phrase を検証し、選択テキストと DB 上の正解テキストを比較。
+- 誤答時のみ内部で `consume_heart` を実行。`QuizPlay` は `submitAnswer` の結果待ち。
+- 残作業: 改修コード未コミット、生産 DB へ `004` 未適用。無料パックの RLS SELECT と公開 API の `translations` 突き合わせは残リスク。
+- GitHub コメント: https://github.com/atosantasan/japanki/issues/7#issuecomment-5740949603
