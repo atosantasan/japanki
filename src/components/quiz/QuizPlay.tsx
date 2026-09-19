@@ -4,10 +4,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { isCorrectChoice } from "@/lib/quiz/grade-choice";
 import { buildQuizQueue } from "@/lib/quiz/build-queue";
 import { prepareQuestion } from "@/lib/quiz/prepare-question";
-import { consumeHeart, createQuizSession } from "@/lib/quiz/rpc-client";
+import { createQuizSession, submitAnswer } from "@/lib/quiz/rpc-client";
 import {
   playHtmlAudio,
   playPhraseAudio,
@@ -16,7 +15,7 @@ import {
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import type { SupportedLocale } from "@/lib/i18n/locales";
-import { PhraseRecordSchema } from "@/lib/validation/translation-schema";
+import { PublicPhraseRecordSchema } from "@/lib/validation/translation-schema";
 import type { PreparedQuestion } from "@/lib/quiz/prepare-question";
 
 type QuizPlayProps = {
@@ -38,6 +37,9 @@ export function QuizPlay({ packId }: QuizPlayProps) {
   const [index, setIndex] = useState(0);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<Feedback>(null);
+  const [revealedCorrectText, setRevealedCorrectText] = useState<string | null>(
+    null,
+  );
   const [needsManualPlay, setNeedsManualPlay] = useState(false);
   const [usedFallback, setUsedFallback] = useState(false);
   const [trackedAudioId, setTrackedAudioId] = useState<string | null>(null);
@@ -96,7 +98,7 @@ export function QuizPlay({ packId }: QuizPlayProps) {
         ) {
           throw new Error("phrases");
         }
-        const parsedPhrases = PhraseRecordSchema.array().parse(
+        const parsedPhrases = PublicPhraseRecordSchema.array().parse(
           (phrasesJson as { phrases?: unknown }).phrases,
         );
 
@@ -192,25 +194,30 @@ export function QuizPlay({ packId }: QuizPlayProps) {
       if (!current || !sessionId || feedback) {
         return;
       }
-      const correct = isCorrectChoice(selectedIndex, current.correctIndex);
-      setFeedback(correct ? "correct" : "incorrect");
-      if (!correct) {
-        const result = await consumeHeart(
-          {
-            rpc: (fn, args) => createBrowserSupabaseClient().rpc(fn, args),
-          },
-          sessionId,
-          current.phrase.id,
-        );
-        setHearts(result.remainingHearts);
-        updateHearts(result.remainingHearts, result.updatedAt);
+      const selectedText = current.choices[selectedIndex];
+      if (!selectedText) {
+        return;
       }
+      const result = await submitAnswer(
+        {
+          rpc: (fn, args) => createBrowserSupabaseClient().rpc(fn, args),
+        },
+        sessionId,
+        current.phrase.id,
+        selectedText,
+        locale,
+      );
+      setFeedback(result.isCorrect ? "correct" : "incorrect");
+      setRevealedCorrectText(result.correctChoiceText);
+      setHearts(result.remainingHearts);
+      updateHearts(result.remainingHearts, result.updatedAt);
     },
-    [current, feedback, sessionId, updateHearts],
+    [current, feedback, locale, sessionId, updateHearts],
   );
 
   const goNext = useCallback(() => {
     setFeedback(null);
+    setRevealedCorrectText(null);
     setIndex((value) => value + 1);
   }, []);
 
@@ -284,7 +291,8 @@ export function QuizPlay({ packId }: QuizPlayProps) {
           ) : null}
           <div className="mt-8 grid gap-3">
             {current.choices.map((choice, choiceIndex) => {
-              const selected = feedback && choiceIndex === current.correctIndex;
+              const selected =
+                Boolean(feedback) && choice === revealedCorrectText;
               return (
                 <button
                   key={choice}

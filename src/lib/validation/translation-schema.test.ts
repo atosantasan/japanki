@@ -79,6 +79,31 @@ describe("PhraseContentSchema", () => {
   });
 });
 
+describe("PublicPhraseRecordSchema", () => {
+  it("accepts a phrase record and omits correct_choice_index from the output", async () => {
+    const { PublicPhraseRecordSchema } = await import(
+      "@/lib/validation/translation-schema"
+    );
+    const parsed = PublicPhraseRecordSchema.parse({
+      id: "11111111-1111-4111-8111-111111111111",
+      pack_id: "survival",
+      romaji: "arigatou",
+      japanese: "ありがとう",
+      audio_url: "https://cdn.example.com/arigatou.mp3",
+      translations: completeTranslations,
+      choices_by_lang: completeChoices,
+      correct_choice_index: 0,
+    });
+
+    expect(parsed).not.toHaveProperty("correct_choice_index");
+    expect(parsed.choices_by_lang.en).toEqual([
+      "Thank you",
+      "Sorry",
+      "Hello",
+    ]);
+  });
+});
+
 describe("AppMessagesSchema", () => {
   it("validates all locale message files including legal copy", () => {
     for (const locale of SUPPORTED_LOCALES) {

@@ -1,4 +1,4 @@
-import type { PhraseRecord } from "@/lib/validation/translation-schema";
+import type { PublicPhraseRecord } from "@/lib/validation/translation-schema";
 
 export type AssignedQuestion = {
   phrase_id: string;
@@ -8,8 +8,8 @@ export type AssignedQuestion = {
 export function buildQuizQueue(input: {
   packId: string;
   assigned: AssignedQuestion[];
-  phrases: PhraseRecord[];
-}): PhraseRecord[] {
+  phrases: PublicPhraseRecord[];
+}): PublicPhraseRecord[] {
   const uniqueIds = new Set(input.assigned.map((item) => item.phrase_id));
   if (input.assigned.length !== 5 || uniqueIds.size !== 5) {
     throw new Error("A session must contain exactly 5 unique phrases");

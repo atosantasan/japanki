@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { grantPurchase } from "@/lib/billing/grant-purchase";
+import { revokePurchaseByPaymentIntent } from "@/lib/billing/revoke-purchase";
 import { handleStripeWebhook } from "@/lib/billing/stripe-webhook";
 import { getStripe, getStripeWebhookSecret } from "@/lib/billing/stripe";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
@@ -18,8 +19,10 @@ export async function POST(request: Request) {
     webhookSecret: getStripeWebhookSecret(),
     constructEvent: (body, sig, secret) =>
       stripe.webhooks.constructEvent(body, sig, secret) as never,
-    grantPurchase: (userId, packId) =>
-      grantPurchase(admin as never, userId, packId),
+    grantPurchase: (userId, packId, paymentIntentId) =>
+      grantPurchase(admin as never, userId, packId, paymentIntentId),
+    revokePurchase: (paymentIntentId) =>
+      revokePurchaseByPaymentIntent(admin as never, paymentIntentId),
   });
 
   if (result.status >= 400) {

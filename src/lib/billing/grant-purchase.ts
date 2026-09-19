@@ -12,11 +12,17 @@ export async function grantPurchase(
   admin: InsertClient,
   userId: string,
   packId: string,
+  paymentIntentId?: string | null,
 ): Promise<PurchaseGrantResult> {
-  const { error } = await admin.from("user_purchases").insert({
+  const row: Record<string, string> = {
     user_id: userId,
     pack_id: packId,
-  });
+  };
+  if (paymentIntentId) {
+    row.stripe_payment_intent_id = paymentIntentId;
+  }
+
+  const { error } = await admin.from("user_purchases").insert(row);
 
   if (!error) {
     return "inserted";

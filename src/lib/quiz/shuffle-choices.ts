@@ -5,6 +5,24 @@ export type ShuffledChoices = {
   correctIndex: number;
 };
 
+export function shuffleChoiceOrder(
+  choices: readonly string[],
+  random: RandomFn = Math.random,
+): string[] {
+  const shuffled = [...choices];
+  for (let i = shuffled.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(random() * (i + 1));
+    const current = shuffled[i];
+    const swapTarget = shuffled[j];
+    if (current === undefined || swapTarget === undefined) {
+      throw new Error("Shuffle produced an undefined slot");
+    }
+    shuffled[i] = swapTarget;
+    shuffled[j] = current;
+  }
+  return shuffled;
+}
+
 export function shuffleChoices(
   choices: readonly string[],
   correctIndex: number,
@@ -29,18 +47,7 @@ export function shuffleChoices(
     );
   }
 
-  const shuffled = [...choices];
-  for (let i = shuffled.length - 1; i > 0; i -= 1) {
-    const j = Math.floor(random() * (i + 1));
-    const current = shuffled[i];
-    const swapTarget = shuffled[j];
-    if (current === undefined || swapTarget === undefined) {
-      throw new Error("Shuffle produced an undefined slot");
-    }
-    shuffled[i] = swapTarget;
-    shuffled[j] = current;
-  }
-
+  const shuffled = shuffleChoiceOrder(choices, random);
   const newCorrectIndex = shuffled.indexOf(correctText);
   if (newCorrectIndex === -1) {
     throw new Error("Correct choice text was lost during shuffle");

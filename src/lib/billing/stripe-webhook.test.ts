@@ -5,6 +5,8 @@ const completedEvent = {
   type: "checkout.session.completed",
   data: {
     object: {
+      payment_status: "paid",
+      payment_intent: "pi_paid",
       metadata: {
         supabase_user_id: "user-1",
         pack_id: "travel",
@@ -42,7 +44,7 @@ describe("handleStripeWebhook", () => {
     });
 
     expect(result.status).toBe(200);
-    expect(grantPurchase).toHaveBeenCalledWith("user-1", "travel");
+    expect(grantPurchase).toHaveBeenCalledWith("user-1", "travel", "pi_paid");
     expect(result.body).toEqual({ received: true });
   });
 
@@ -84,5 +86,89 @@ describe("handleStripeWebhook", () => {
 
     expect(result.status).toBe(200);
     expect(grantPurchase).not.toHaveBeenCalled();
+  });
+
+  it("does not grant a purchase when checkout completes unpaid", async () => {
+    const grantPurchase = vi.fn();
+    const revokePurchase = vi.fn();
+    const result = await handleStripeWebhook({
+      payload: "{}",
+      signature: "good",
+      webhookSecret: "whsec_test",
+      constructEvent: () =>
+        ({
+          type: "checkout.session.completed",
+          data: {
+            object: {
+              payment_status: "unpaid",
+              payment_intent: "pi_unpaid",
+              metadata: {
+                supabase_user_id: "user-1",
+                pack_id: "travel",
+              },
+            },
+          },
+        }) as never,
+      grantPurchase,
+      revokePurchase,
+    });
+
+    expect(result.status).toBe(200);
+    expect(grantPurchase).not.toHaveBeenCalled();
+    expect(revokePurchase).not.toHaveBeenCalled();
+  });
+
+  it("grants a purchase on async_payment_succeeded when paid", async () => {
+    const grantPurchase = vi.fn().mockResolvedValue("inserted");
+    const result = await handleStripeWebhook({
+      payload: "{}",
+      signature: "good",
+      webhookSecret: "whsec_test",
+      constructEvent: () =>
+        ({
+          type: "checkout.session.async_payment_succeeded",
+          data: {
+            object: {
+              payment_status: "paid",
+              payment_intent: "pi_async",
+              metadata: {
+                supabase_user_id: "user-1",
+                pack_id: "travel",
+              },
+            },
+          },
+        }) as never,
+      grantPurchase,
+    });
+
+    expect(result.status).toBe(200);
+    expect(grantPurchase).toHaveBeenCalledWith("user-1", "travel", "pi_async");
+  });
+
+  it("revokes access when a charge is refunded", async () => {
+    const grantPurchase = vi.fn();
+    const revokePurchase = vi.fn().mockResolvedValue("revoked");
+    const result = await handleStripeWebhook({
+      payload: "{}",
+      signature: "good",
+      webhookSecret: "whsec_test",
+      constructEvent: () =>
+        ({
+          type: "charge.refunded",
+          data: {
+            object: {
+              id: "ch_1",
+              payment_intent: "pi_refund",
+              refunded: true,
+            },
+          },
+        }) as never,
+      grantPurchase,
+      revokePurchase,
+    });
+
+    expect(result.status).toBe(200);
+    expect(grantPurchase).not.toHaveBeenCalled();
+    expect(revokePurchase).toHaveBeenCalledWith("pi_refund");
   });
 });

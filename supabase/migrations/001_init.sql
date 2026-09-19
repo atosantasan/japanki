@@ -80,7 +80,7 @@ create table public.quiz_attempts (
   session_id uuid references public.quiz_sessions(id) on delete cascade not null,
   phrase_id uuid references public.phrases(id) on delete cascade not null,
   first_incorrect_at timestamp with time zone default timezone('utc'::text, now()),
-  unique(session_id, phrase_id)
+  constraint quiz_attempts_session_id_phrase_id_key unique (session_id, phrase_id)
 );
 
 -- 5. user_purchases（購入履歴）
@@ -88,6 +88,7 @@ create table public.user_purchases (
   id uuid default gen_random_uuid() primary key,
   user_id uuid references public.profiles(id) on delete cascade not null,
   pack_id text references public.content_packs(id) on delete cascade not null,
+  stripe_payment_intent_id text,
   created_at timestamp with time zone default timezone('utc'::text, now()),
   unique(user_id, pack_id)
 );
@@ -102,6 +103,7 @@ create index idx_quiz_attempts_session_id on public.quiz_attempts (session_id);
 create index idx_quiz_attempts_phrase_id on public.quiz_attempts (phrase_id);
 create index idx_user_purchases_user_id on public.user_purchases (user_id);
 create index idx_user_purchases_pack_id on public.user_purchases (pack_id);
+create index idx_user_purchases_stripe_payment_intent_id on public.user_purchases (stripe_payment_intent_id);
 
 -- 6. RPC: セッション開始時にサーバー側で購入権限を検証しランダム5問を抽出しセッションを作成する関数
 create or replace function public.create_quiz_session(pack_id_param text)
