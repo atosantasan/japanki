@@ -6,6 +6,7 @@ export async function requestSubmitAnswer(
 ): Promise<SubmitAnswerResult> {
   const response = await fetch("/api/quiz/submit-answer", {
     method: "POST",
+    cache: "no-store",
     credentials: "include",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(input),

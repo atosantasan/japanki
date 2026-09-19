@@ -13,7 +13,7 @@ export function shouldBypassServiceWorkerCache(url: URL): boolean {
     return true;
   }
 
-  if (url.pathname.startsWith("/auth/")) {
+  if (url.pathname.startsWith("/auth/") || url.pathname.startsWith("/api/")) {
     return true;
   }
 

@@ -40,6 +40,7 @@ export function QuizPlay({ packId }: QuizPlayProps) {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<Feedback>(null);
   const [submitError, setSubmitError] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [revealedCorrectText, setRevealedCorrectText] = useState<string | null>(
     null,
   );
@@ -47,6 +48,7 @@ export function QuizPlay({ packId }: QuizPlayProps) {
   const [usedFallback, setUsedFallback] = useState(false);
   const [trackedAudioId, setTrackedAudioId] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const submittingRef = useRef(false);
 
   const current = queue[index];
   const complete = !loading && !errorKey && queue.length === 5 && index >= 5;
@@ -148,6 +150,17 @@ export function QuizPlay({ packId }: QuizPlayProps) {
     };
   }, [authLoading, locale, packId, refreshProfile]);
 
+  useEffect(() => {
+    if (!sessionId) {
+      return;
+    }
+    void fetch("/api/quiz/submit-answer", {
+      method: "GET",
+      cache: "no-store",
+      credentials: "include",
+    });
+  }, [sessionId]);
+
   const currentId = current?.phrase.id ?? null;
   if (currentId !== trackedAudioId) {
     setTrackedAudioId(currentId);
@@ -194,13 +207,15 @@ export function QuizPlay({ packId }: QuizPlayProps) {
 
   const onChoose = useCallback(
     async (selectedIndex: number) => {
-      if (!current || !sessionId || feedback) {
+      if (!current || !sessionId || feedback || submittingRef.current) {
         return;
       }
       const selectedText = current.choices[selectedIndex];
       if (!selectedText) {
         return;
       }
+      submittingRef.current = true;
+      setSubmitting(true);
       try {
         const result = await requestSubmitAnswer({
           sessionId,
@@ -215,6 +230,9 @@ export function QuizPlay({ packId }: QuizPlayProps) {
         updateHearts(result.remainingHearts, result.updatedAt);
       } catch {
         setSubmitError(true);
+      } finally {
+        submittingRef.current = false;
+        setSubmitting(false);
       }
     },
     [current, feedback, locale, sessionId, updateHearts],
@@ -308,7 +326,7 @@ export function QuizPlay({ packId }: QuizPlayProps) {
                 <button
                   key={choice}
                   type="button"
-                  disabled={Boolean(feedback)}
+                  disabled={Boolean(feedback) || submitting}
                   onClick={() => void onChoose(choiceIndex)}
                   className={`rounded-2xl border px-5 py-4 text-left text-lg transition ${
                     selected

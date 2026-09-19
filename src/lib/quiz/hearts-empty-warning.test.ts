@@ -17,7 +17,7 @@ describe("QuizPlay hearts empty warning", () => {
   });
 
   it("does not disable answer buttons when hearts are empty", () => {
-    expect(source).toMatch(/disabled=\{Boolean\(feedback\)\}/);
+    expect(source).toMatch(/disabled=\{Boolean\(feedback\) \|\| submitting\}/);
     expect(source).not.toMatch(/disabled=\{.*hearts/);
   });
 
