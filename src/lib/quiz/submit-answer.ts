@@ -81,6 +81,9 @@ export async function submitAnswerForRequest(
   if (!context.hearts) {
     return { status: 500, body: { error: "Unable to grade answer" } };
   }
+  if (context.hearts.remainingHearts <= 0) {
+    return { status: 403, body: { error: "No hearts remaining" } };
+  }
 
   const parsed = PhraseGradeSchema.safeParse(context.phrase);
   if (!parsed.success) {
