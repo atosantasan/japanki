@@ -29,12 +29,13 @@ function ownedContext(overrides?: {
   ownerId?: string | null;
   assigned?: boolean;
   phrase?: typeof phrase | null;
+  hearts?: typeof hearts;
 }) {
   return {
     ownerId: overrides?.ownerId === undefined ? "user-1" : overrides.ownerId,
     assigned: overrides?.assigned ?? true,
     phrase: overrides && "phrase" in overrides ? overrides.phrase : phrase,
-    hearts,
+    hearts: overrides?.hearts ?? hearts,
   };
 }
 
@@ -152,6 +153,30 @@ describe("submitAnswerForRequest", () => {
     expect(result.body.isCorrect).toBe(false);
     expect(result.body.remainingHearts).toBe(4);
     expect(result.body.correctChoiceText).toBe("Yes");
+  });
+
+  it("rejects grading when remaining hearts are 0", async () => {
+    const consumeHeart = vi.fn();
+    const result = await submitAnswerForRequest(
+      {
+        sessionId,
+        phraseId,
+        selectedChoiceText: "Yes",
+        locale: "en",
+      },
+      {
+        getUser: vi.fn().mockResolvedValue({ id: "user-1" }),
+        loadGradeContext: vi.fn().mockResolvedValue(
+          ownedContext({
+            hearts: { remainingHearts: 0, updatedAt: "2026-09-19T00:00:00Z" },
+          }),
+        ),
+        consumeHeart,
+      },
+    );
+
+    expect(result.status).toBe(403);
+    expect(consumeHeart).not.toHaveBeenCalled();
   });
 });
 

@@ -11,14 +11,14 @@ const quizPlayPath = join(
 describe("QuizPlay hearts empty warning", () => {
   const source = readFileSync(quizPlayPath, "utf8");
 
-  it("uses recovered hearts instead of the raw stored count for heartsEmpty", () => {
-    expect(source).toMatch(/shouldShowHeartsEmpty/);
+  it("locks answering from remaining hearts instead of a raw stored zero", () => {
+    expect(source).toMatch(/canPlayWithHearts/);
     expect(source).not.toMatch(/hearts === 0 && feedback/);
   });
 
-  it("does not disable answer buttons when hearts are empty", () => {
-    expect(source).toMatch(/disabled=\{Boolean\(feedback\)\}/);
-    expect(source).not.toMatch(/disabled=\{.*hearts/);
+  it("disables answer buttons when remaining hearts are empty", () => {
+    expect(source).toMatch(/disabled=\{Boolean\(feedback\) \|\| !canPlayWithHearts\(hearts\)\}/);
+    expect(source).toMatch(/!canPlayWithHearts\(hearts\)/);
   });
 
   it("surfaces submitAnswer failures instead of swallowing them", () => {

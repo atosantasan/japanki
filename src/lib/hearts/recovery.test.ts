@@ -65,3 +65,11 @@ describe("shouldShowHeartsEmpty", () => {
     ).toBe(true);
   });
 });
+
+describe("canPlayWithHearts", () => {
+  it("blocks play only when remaining hearts are 0", async () => {
+    const { canPlayWithHearts } = await import("@/lib/hearts/recovery");
+    expect(canPlayWithHearts(0)).toBe(false);
+    expect(canPlayWithHearts(1)).toBe(true);
+  });
+});

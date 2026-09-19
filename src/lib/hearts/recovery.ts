@@ -61,3 +61,7 @@ export function shouldShowHeartsEmpty(input: {
 }): boolean {
   return recoveredHeartCount(input) === 0;
 }
+
+export function canPlayWithHearts(remainingHearts: number): boolean {
+  return remainingHearts > 0;
+}

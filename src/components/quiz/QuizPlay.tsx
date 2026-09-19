@@ -12,7 +12,7 @@ import {
   playWebAudioFallback,
 } from "@/lib/quiz/phrase-audio";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
-import { shouldShowHeartsEmpty } from "@/lib/hearts/recovery";
+import { canPlayWithHearts } from "@/lib/hearts/recovery";
 import type { SupportedLocale } from "@/lib/i18n/locales";
 import type { PreparedQuestion } from "@/lib/quiz/prepare-question";
 
@@ -144,7 +144,13 @@ export function QuizPlay({ packId }: QuizPlayProps) {
 
   const onChoose = useCallback(
     (selectedIndex: number) => {
-      if (!current || !sessionId || feedback || submittingRef.current) {
+      if (
+        !current ||
+        !sessionId ||
+        feedback ||
+        submittingRef.current ||
+        !canPlayWithHearts(hearts)
+      ) {
         return;
       }
       const selectedText = current.choices[selectedIndex];
@@ -170,7 +176,7 @@ export function QuizPlay({ packId }: QuizPlayProps) {
           setSubmitError(true);
         });
     },
-    [current, feedback, locale, sessionId, updateHearts],
+    [current, feedback, hearts, locale, sessionId, updateHearts],
   );
 
   const goNext = useCallback(() => {
@@ -245,10 +251,7 @@ export function QuizPlay({ packId }: QuizPlayProps) {
               </button>
             </div>
           ) : null}
-          {shouldShowHeartsEmpty({
-            storedHearts: hearts,
-            lastHeartUpdatedAt: profile?.lastHeartUpdatedAt,
-          }) && feedback !== "incorrect" ? (
+          {!canPlayWithHearts(hearts) && feedback !== "incorrect" ? (
             <p className="mt-6 text-sm text-sun">{t("heartsEmpty")}</p>
           ) : null}
           {submitError ? (
@@ -262,7 +265,7 @@ export function QuizPlay({ packId }: QuizPlayProps) {
                 <button
                   key={choice}
                   type="button"
-                  disabled={Boolean(feedback)}
+                  disabled={Boolean(feedback) || !canPlayWithHearts(hearts)}
                   onClick={() => void onChoose(choiceIndex)}
                   className={`rounded-2xl border px-5 py-4 text-left text-lg transition ${
                     selected
