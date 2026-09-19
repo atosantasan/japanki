@@ -24,5 +24,7 @@ describe("QuizPlay hearts empty warning", () => {
   it("surfaces submitAnswer failures instead of swallowing them", () => {
     expect(source).toMatch(/submitError/);
     expect(source).toMatch(/catch/);
+    expect(source).toMatch(/requestSubmitAnswer/);
+    expect(source).toMatch(/gradeError/);
   });
 });

@@ -44,6 +44,7 @@
     "home": "ホームへ戻る",
     "paidLocked": "このパックは購入が必要です。",
     "startError": "このパックを開始できませんでした。",
+    "gradeError": "解答を判定できませんでした。もう一度選んでください。",
     "heartsEmpty": "ハートがありません。時間とともに回復します。",
     "notConfigured": "Supabaseがまだ設定されていません。",
     "audioFallback": "フレーズ音声がまだないため、Japankiは生成したトーンを再生しています。"

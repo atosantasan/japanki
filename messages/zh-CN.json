@@ -44,6 +44,7 @@
     "home": "回首页",
     "paidLocked": "此教材包需要购买。",
     "startError": "无法开始这个教材包。",
+    "gradeError": "无法判定这题，请再试一次。",
     "heartsEmpty": "爱心用完了，会随时间恢复。",
     "notConfigured": "尚未配置 Supabase。",
     "audioFallback": "语句音频尚未就绪，Japanki 改为播放生成的音调。"

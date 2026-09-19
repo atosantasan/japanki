@@ -44,6 +44,7 @@
     "home": "Back home",
     "paidLocked": "Purchase required for this pack.",
     "startError": "Could not start this pack.",
+    "gradeError": "Could not grade this answer. Please try again.",
     "heartsEmpty": "No hearts left. They refill over time.",
     "notConfigured": "Supabase is not configured yet.",
     "audioFallback": "Phrase audio is not available yet, so Japanki is playing a generated tone."

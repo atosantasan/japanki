@@ -6,7 +6,8 @@ import { Link } from "@/i18n/navigation";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { buildQuizQueue } from "@/lib/quiz/build-queue";
 import { prepareQuestion } from "@/lib/quiz/prepare-question";
-import { createQuizSession, submitAnswer } from "@/lib/quiz/rpc-client";
+import { createQuizSession } from "@/lib/quiz/rpc-client";
+import { requestSubmitAnswer } from "@/lib/quiz/submit-answer-client";
 import {
   playHtmlAudio,
   playPhraseAudio,
@@ -201,15 +202,12 @@ export function QuizPlay({ packId }: QuizPlayProps) {
         return;
       }
       try {
-        const result = await submitAnswer(
-          {
-            rpc: (fn, args) => createBrowserSupabaseClient().rpc(fn, args),
-          },
+        const result = await requestSubmitAnswer({
           sessionId,
-          current.phrase.id,
-          selectedText,
+          phraseId: current.phrase.id,
+          selectedChoiceText: selectedText,
           locale,
-        );
+        });
         setSubmitError(false);
         setFeedback(result.isCorrect ? "correct" : "incorrect");
         setRevealedCorrectText(result.correctChoiceText);
@@ -300,7 +298,7 @@ export function QuizPlay({ packId }: QuizPlayProps) {
             <p className="mt-6 text-sm text-sun">{t("heartsEmpty")}</p>
           ) : null}
           {submitError ? (
-            <p className="mt-6 text-sm text-sun">{t("startError")}</p>
+            <p className="mt-6 text-sm text-sun">{t("gradeError")}</p>
           ) : null}
           <div className="mt-8 grid gap-3">
             {current.choices.map((choice, choiceIndex) => {
