@@ -37,3 +37,27 @@ export function formatCountdown(msUntilNext: number): string {
   const seconds = totalSeconds % 60;
   return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }
+
+export function recoveredHeartCount(input: {
+  storedHearts: number;
+  lastHeartUpdatedAt: string | null | undefined;
+  now?: Date;
+}): number {
+  const now = input.now ?? new Date();
+  const lastHeartUpdatedAt = input.lastHeartUpdatedAt
+    ? new Date(input.lastHeartUpdatedAt)
+    : now;
+  return recoverHearts({
+    storedHearts: input.storedHearts,
+    lastHeartUpdatedAt,
+    now,
+  }).hearts;
+}
+
+export function shouldShowHeartsEmpty(input: {
+  storedHearts: number;
+  lastHeartUpdatedAt: string | null | undefined;
+  now?: Date;
+}): boolean {
+  return recoveredHeartCount(input) === 0;
+}

@@ -41,3 +41,27 @@ describe("recoverHearts", () => {
     expect(result.msUntilNext).toBeNull();
   });
 });
+
+describe("shouldShowHeartsEmpty", () => {
+  it("does not show the empty warning when stored hearts are 0 but recovery has refilled them", async () => {
+    const { shouldShowHeartsEmpty } = await import("@/lib/hearts/recovery");
+    expect(
+      shouldShowHeartsEmpty({
+        storedHearts: 0,
+        lastHeartUpdatedAt: "2026-09-07T00:00:00.000Z",
+        now: new Date("2026-09-07T03:00:00.000Z"),
+      }),
+    ).toBe(false);
+  });
+
+  it("shows the empty warning only when recovered hearts are still 0", async () => {
+    const { shouldShowHeartsEmpty } = await import("@/lib/hearts/recovery");
+    expect(
+      shouldShowHeartsEmpty({
+        storedHearts: 0,
+        lastHeartUpdatedAt: "2026-09-07T00:00:00.000Z",
+        now: new Date("2026-09-07T00:10:00.000Z"),
+      }),
+    ).toBe(true);
+  });
+});
