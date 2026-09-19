@@ -11,6 +11,13 @@
 2. 既存環境向けマイグレーションを適用する。
 
 ## 3. 受入条件（Acceptance Criteria）
-- [ ] `quiz_attempts` に UNIQUE (session_id, phrase_id) が存在すること。
-- [ ] ON CONFLICT が当該制約を対象にできること。
-- [ ] 設計書 3-6 に制約表があること。
+- [x] `quiz_attempts` に UNIQUE (session_id, phrase_id) が存在すること。
+- [x] ON CONFLICT が当該制約を対象にできること。
+- [x] 設計書 3-6 に制約表があること。
+
+## 4. 今回の実施内容（ローカル実装・未コミット / Human Gate 待ち）
+- `001_init.sql` に `quiz_attempts_session_id_phrase_id_key` を名前付き UNIQUE で明記。
+- `004_submit_answer_and_billing_guards.sql` で既存 DB 向けに同制約を `IF NOT EXISTS` 相当で追加。
+- `docs/design/4_db_schema.md` 3-6 に制約表を追加。
+- 残作業: 改修コード未コミット、既存 Supabase へ `004` 未適用。
+- GitHub コメント: https://github.com/atosantasan/japanki/issues/8#issuecomment-5740949666
