@@ -14,6 +14,7 @@ import {
 } from "@/lib/quiz/phrase-audio";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
+import { shouldShowHeartsEmpty } from "@/lib/hearts/recovery";
 import type { SupportedLocale } from "@/lib/i18n/locales";
 import { PublicPhraseRecordSchema } from "@/lib/validation/translation-schema";
 import type { PreparedQuestion } from "@/lib/quiz/prepare-question";
@@ -37,6 +38,7 @@ export function QuizPlay({ packId }: QuizPlayProps) {
   const [index, setIndex] = useState(0);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<Feedback>(null);
+  const [submitError, setSubmitError] = useState(false);
   const [revealedCorrectText, setRevealedCorrectText] = useState<string | null>(
     null,
   );
@@ -198,19 +200,24 @@ export function QuizPlay({ packId }: QuizPlayProps) {
       if (!selectedText) {
         return;
       }
-      const result = await submitAnswer(
-        {
-          rpc: (fn, args) => createBrowserSupabaseClient().rpc(fn, args),
-        },
-        sessionId,
-        current.phrase.id,
-        selectedText,
-        locale,
-      );
-      setFeedback(result.isCorrect ? "correct" : "incorrect");
-      setRevealedCorrectText(result.correctChoiceText);
-      setHearts(result.remainingHearts);
-      updateHearts(result.remainingHearts, result.updatedAt);
+      try {
+        const result = await submitAnswer(
+          {
+            rpc: (fn, args) => createBrowserSupabaseClient().rpc(fn, args),
+          },
+          sessionId,
+          current.phrase.id,
+          selectedText,
+          locale,
+        );
+        setSubmitError(false);
+        setFeedback(result.isCorrect ? "correct" : "incorrect");
+        setRevealedCorrectText(result.correctChoiceText);
+        setHearts(result.remainingHearts);
+        updateHearts(result.remainingHearts, result.updatedAt);
+      } catch {
+        setSubmitError(true);
+      }
     },
     [current, feedback, locale, sessionId, updateHearts],
   );
@@ -286,8 +293,14 @@ export function QuizPlay({ packId }: QuizPlayProps) {
               </button>
             </div>
           ) : null}
-          {hearts === 0 && feedback !== "incorrect" ? (
+          {shouldShowHeartsEmpty({
+            storedHearts: hearts,
+            lastHeartUpdatedAt: profile?.lastHeartUpdatedAt,
+          }) && feedback !== "incorrect" ? (
             <p className="mt-6 text-sm text-sun">{t("heartsEmpty")}</p>
+          ) : null}
+          {submitError ? (
+            <p className="mt-6 text-sm text-sun">{t("startError")}</p>
           ) : null}
           <div className="mt-8 grid gap-3">
             {current.choices.map((choice, choiceIndex) => {
