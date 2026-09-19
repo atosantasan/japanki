@@ -11,5 +11,12 @@
 2. 購入付与時に `stripe_payment_intent_id` 等の突合キーを保存する。
 
 ## 3. 受入条件（Acceptance Criteria）
-- [ ] 返金後に該当パックへアクセスできないこと。
-- [ ] 突合キーが購入行に保存されること。
+- [x] 返金後に該当パックへアクセスできないこと。
+- [x] 突合キーが購入行に保存されること。
+
+## 4. 今回の実施内容（ローカル実装・未コミット / Human Gate 待ち）
+- `grantPurchase` が `stripe_payment_intent_id` を `user_purchases` に保存。
+- `charge.refunded` で `revokePurchaseByPaymentIntent` が該当行を DELETE。
+- `001_init.sql` / `004` に列とインデックスを追加。
+- 残作業: 改修コード未コミット、`004` 未適用、Stripe Dashboard で `charge.refunded` 購読追加が必要。`charge.dispute.*` は未実装。
+- GitHub コメント: https://github.com/atosantasan/japanki/issues/10#issuecomment-5740949830
