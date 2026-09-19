@@ -76,3 +76,34 @@ describe("Supabase init migration", () => {
     );
   });
 });
+
+describe("quiz_attempts unique constraint and submit_answer", () => {
+  const migrationsDir = join(
+    dirname(fileURLToPath(import.meta.url)),
+    "../../../supabase/migrations",
+  );
+  const allSql = readdirSync(migrationsDir)
+    .filter((file) => file.endsWith(".sql"))
+    .map((file) => readFileSync(join(migrationsDir, file), "utf8"))
+    .join("\n");
+
+  it("declares a named UNIQUE (session_id, phrase_id) on quiz_attempts", () => {
+    expect(allSql).toMatch(
+      /quiz_attempts_session_id_phrase_id_key/,
+    );
+    expect(allSql).toMatch(
+      /unique\s*\(\s*session_id\s*,\s*phrase_id\s*\)/i,
+    );
+  });
+
+  it("defines submit_answer RPC with auth.uid() and selected choice grading", () => {
+    expect(allSql).toMatch(/create or replace function public\.submit_answer/i);
+    expect(allSql).toMatch(/selected_choice_text/);
+    expect(allSql).toMatch(/v_user_id uuid := auth\.uid\(\)/);
+    expect(allSql).toMatch(/Phrase not assigned to this session/);
+  });
+
+  it("stores stripe_payment_intent_id on user_purchases for refund lookup", () => {
+    expect(allSql).toMatch(/stripe_payment_intent_id/);
+  });
+});

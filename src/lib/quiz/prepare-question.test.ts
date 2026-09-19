@@ -42,7 +42,7 @@ describe("prepareQuestion", () => {
     expect(result.choices.every((choice) => typeof choice === "string")).toBe(
       true,
     );
-    expect(result.choices[result.correctIndex]).toBe("Thank you");
+    expect(result).not.toHaveProperty("correctIndex");
   });
 
   it("uses English choices and prompt when locale is en", () => {
@@ -50,6 +50,6 @@ describe("prepareQuestion", () => {
 
     expect(result.prompt).toBe("Thank you");
     expect(result.choices).toEqual(["Thank you", "Sorry", "Hello"]);
-    expect(result.correctIndex).toBe(0);
+    expect(result).not.toHaveProperty("correctIndex");
   });
 });

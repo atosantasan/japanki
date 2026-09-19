@@ -1,32 +1,25 @@
 import type { SupportedLocale } from "@/lib/i18n/locales";
 import { toContentLocale } from "@/lib/i18n/locales";
-import { shuffleChoices, type RandomFn } from "@/lib/quiz/shuffle-choices";
-import type { PhraseRecord } from "@/lib/validation/translation-schema";
+import { shuffleChoiceOrder, type RandomFn } from "@/lib/quiz/shuffle-choices";
+import type { PublicPhraseRecord } from "@/lib/validation/translation-schema";
 
 export type PreparedQuestion = {
-  phrase: PhraseRecord;
+  phrase: PublicPhraseRecord;
   prompt: string;
   choices: string[];
-  correctIndex: number;
 };
 
 export function prepareQuestion(
-  phrase: PhraseRecord,
+  phrase: PublicPhraseRecord,
   locale: SupportedLocale,
   random: RandomFn = Math.random,
 ): PreparedQuestion {
   const contentLocale = toContentLocale(locale);
   const choices = phrase.choices_by_lang[contentLocale];
-  const shuffled = shuffleChoices(
-    choices,
-    phrase.correct_choice_index,
-    random,
-  );
 
   return {
     phrase,
     prompt: phrase.translations[contentLocale],
-    choices: shuffled.choices,
-    correctIndex: shuffled.correctIndex,
+    choices: shuffleChoiceOrder(choices, random),
   };
 }

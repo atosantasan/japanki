@@ -1,4 +1,7 @@
-import { PhraseRecordSchema, type PhraseRecord } from "@/lib/validation/translation-schema";
+import {
+  PublicPhraseRecordSchema,
+  type PublicPhraseRecord,
+} from "@/lib/validation/translation-schema";
 import { resolvePhraseAccess } from "@/lib/phrases/access";
 
 export type PhraseRequestLoader = {
@@ -11,7 +14,7 @@ export type PhraseRequestLoader = {
 };
 
 export type PhrasesResponse =
-  | { status: 200; body: { phrases: PhraseRecord[] } }
+  | { status: 200; body: { phrases: PublicPhraseRecord[] } }
   | { status: 401 | 403 | 404 | 500; body: { error: string } };
 
 export async function loadPhrasesForRequest(
@@ -36,7 +39,7 @@ export async function loadPhrasesForRequest(
   }
 
   const rows = await loader.getPhrases(packId);
-  const parsed = PhraseRecordSchema.array().safeParse(rows);
+  const parsed = PublicPhraseRecordSchema.array().safeParse(rows);
   if (!parsed.success) {
     console.error("Phrase payload failed Zod validation");
     return { status: 500, body: { error: "Invalid phrase data" } };

@@ -67,4 +67,40 @@ describe("quiz RPC client", () => {
     expect(first.remainingHearts).toBe(3);
     expect(second.remainingHearts).toBe(3);
   });
+
+  it("submits selected choice text to submit_answer for server-side grading", async () => {
+    const { submitAnswer } = await import("@/lib/quiz/rpc-client");
+    const rpc = vi.fn().mockResolvedValue({
+      data: [
+        {
+          is_correct: true,
+          remaining_hearts: 5,
+          updated_at: "2026-09-06T00:00:00Z",
+          correct_choice_text: "Thank you",
+        },
+      ],
+      error: null,
+    });
+
+    const result = await submitAnswer(
+      { rpc } as never,
+      "sess-1",
+      "phrase-1",
+      "Thank you",
+      "en",
+    );
+
+    expect(rpc).toHaveBeenCalledWith("submit_answer", {
+      session_id_param: "sess-1",
+      phrase_id_param: "phrase-1",
+      selected_choice_text: "Thank you",
+      locale_param: "en",
+    });
+    expect(result).toEqual({
+      isCorrect: true,
+      remainingHearts: 5,
+      updatedAt: "2026-09-06T00:00:00Z",
+      correctChoiceText: "Thank you",
+    });
+  });
 });

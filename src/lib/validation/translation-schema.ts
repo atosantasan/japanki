@@ -50,6 +50,10 @@ export const PhraseRecordSchema = PhraseContentSchema.extend({
   pack_id: z.string().min(1),
 });
 
+export const PublicPhraseRecordSchema = PhraseRecordSchema.omit({
+  correct_choice_index: true,
+});
+
 export const AppMessagesSchema = z.object({
   Metadata: z.object({
     title: requiredText,
@@ -198,6 +202,7 @@ export type TranslationDictionary = z.infer<typeof TranslationSchema>;
 export type ChoicesByLang = z.infer<typeof ChoicesByLangSchema>;
 export type PhraseContent = z.infer<typeof PhraseContentSchema>;
 export type PhraseRecord = z.infer<typeof PhraseRecordSchema>;
+export type PublicPhraseRecord = z.infer<typeof PublicPhraseRecordSchema>;
 export type AppMessages = z.infer<typeof AppMessagesSchema>;
 
 export function assertSupportedLocales(

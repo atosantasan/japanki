@@ -68,6 +68,36 @@ describe("loadPhrasesForRequest", () => {
     });
 
     expect(result.status).toBe(200);
-    expect(result.body).toEqual({ phrases: [validPhrase] });
+    if (result.status !== 200) {
+      throw new Error("expected phrases payload");
+    }
+    const [phrase] = result.body.phrases;
+    expect(phrase).toMatchObject({
+      id: validPhrase.id,
+      pack_id: validPhrase.pack_id,
+      romaji: validPhrase.romaji,
+      japanese: validPhrase.japanese,
+      audio_url: validPhrase.audio_url,
+      translations: validPhrase.translations,
+      choices_by_lang: validPhrase.choices_by_lang,
+    });
+    expect(phrase).not.toHaveProperty("correct_choice_index");
+  });
+
+  it("omits correct_choice_index from the public phrase payload", async () => {
+    const result = await loadPhrasesForRequest("survival", {
+      getUser: vi.fn().mockResolvedValue({ id: "user-1" }),
+      getPack: vi.fn().mockResolvedValue({ id: "survival", is_free: true }),
+      hasPurchase: vi.fn(),
+      getPhrases: vi.fn().mockResolvedValue([validPhrase]),
+    });
+
+    expect(result.status).toBe(200);
+    if (result.status !== 200) {
+      throw new Error("expected phrases payload");
+    }
+    expect(result.body.phrases).toHaveLength(1);
+    expect(result.body.phrases[0]).not.toHaveProperty("correct_choice_index");
+    expect(JSON.stringify(result.body)).not.toContain("correct_choice_index");
   });
 });
