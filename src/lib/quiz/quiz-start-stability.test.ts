@@ -20,10 +20,12 @@ describe("quiz start stability", () => {
       "utf8",
     );
     expect(source).toMatch(
-      /}, \[authLoading, locale, packId, refreshProfile\]\);/,
+      /}, \[authLoading, locale, packId, updateHearts\]\);/,
     );
-    expect(source).not.toMatch(
-      /}, \[authLoading, locale, packId, refreshProfile, updateHearts\]\);/,
-    );
+    expect(source).not.toMatch(/refreshProfile/);
+    expect(source).toMatch(/requestStartQuiz/);
+    expect(source).not.toMatch(/createQuizSession/);
+    expect(source).not.toMatch(/\/api\/phrases/);
+
   });
 });
