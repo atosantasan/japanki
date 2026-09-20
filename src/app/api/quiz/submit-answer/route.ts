@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { consumeHeart } from "@/lib/quiz/rpc-client";
+import { submitAnswer } from "@/lib/quiz/rpc-client";
 import { recoveredHeartCount } from "@/lib/hearts/recovery";
 import {
   SubmitAnswerBodySchema,
@@ -97,13 +97,15 @@ async function createSubmitAnswerLoader(
             : null,
       };
     },
-    async consumeHeart(sessionId, phraseId) {
-      return consumeHeart(
+    async submitAnswer(sessionId, phraseId, selectedChoiceText, locale) {
+      return submitAnswer(
         {
           rpc: (fn, args) => userClient.rpc(fn, args),
         },
         sessionId,
         phraseId,
+        selectedChoiceText,
+        locale,
       );
     },
   };

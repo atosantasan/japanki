@@ -1,13 +1,8 @@
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { afterEach, describe, expect, it, vi } from "vitest";
-import { SUBMIT_ANSWER_RATE_LIMIT_PER_HOUR } from "@/lib/constants/app";
+import { describe, expect, it, vi } from "vitest";
 import { submitAnswerForRequest } from "@/lib/quiz/submit-answer";
-import {
-  consumeRateLimit,
-  resetRateLimitStoreForTests,
-} from "@/lib/security/rate-limit";
 
 const phrase = {
   choices_by_lang: {
@@ -45,12 +40,9 @@ function ownedContext(overrides?: {
 }
 
 describe("submitAnswerForRequest", () => {
-  afterEach(() => {
-    resetRateLimitStoreForTests();
-  });
-
   it("returns 401 when the user is missing", async () => {
     const loadGradeContext = vi.fn();
+    const submitAnswer = vi.fn();
     const result = await submitAnswerForRequest(
       {
         sessionId,
@@ -61,7 +53,7 @@ describe("submitAnswerForRequest", () => {
       {
         getUser: vi.fn().mockResolvedValue(null),
         loadGradeContext,
-        consumeHeart: vi.fn(),
+        submitAnswer,
       },
     );
 
@@ -80,7 +72,7 @@ describe("submitAnswerForRequest", () => {
       {
         getUser: vi.fn().mockResolvedValue({ id: "user-1" }),
         loadGradeContext: vi.fn().mockResolvedValue(ownedContext({ ownerId: "user-2" })),
-        consumeHeart: vi.fn(),
+        submitAnswer: vi.fn(),
       },
     );
 
@@ -98,15 +90,20 @@ describe("submitAnswerForRequest", () => {
       {
         getUser: vi.fn().mockResolvedValue({ id: "user-1" }),
         loadGradeContext: vi.fn().mockResolvedValue(ownedContext({ assigned: false })),
-        consumeHeart: vi.fn(),
+        submitAnswer: vi.fn(),
       },
     );
 
     expect(result.status).toBe(400);
   });
 
-  it("grades a correct answer without consuming a heart", async () => {
-    const consumeHeart = vi.fn();
+  it("returns the submit_answer RPC result for a correct grade", async () => {
+    const submitAnswer = vi.fn().mockResolvedValue({
+      isCorrect: true,
+      remainingHearts: 5,
+      updatedAt: "2026-09-19T00:00:00Z",
+      correctChoiceText: "Yes",
+    });
     const loadGradeContext = vi.fn().mockResolvedValue(ownedContext());
     const result = await submitAnswerForRequest(
       {
@@ -118,12 +115,12 @@ describe("submitAnswerForRequest", () => {
       {
         getUser: vi.fn().mockResolvedValue({ id: "user-1" }),
         loadGradeContext,
-        consumeHeart,
+        submitAnswer,
       },
     );
 
     expect(loadGradeContext).toHaveBeenCalledWith(sessionId, phraseId, "user-1");
-    expect(consumeHeart).not.toHaveBeenCalled();
+    expect(submitAnswer).toHaveBeenCalledWith(sessionId, phraseId, "Yes", "en");
     expect(result).toEqual({
       status: 200,
       body: {
@@ -135,10 +132,12 @@ describe("submitAnswerForRequest", () => {
     });
   });
 
-  it("consumes a heart only on the first incorrect grade", async () => {
-    const consumeHeart = vi.fn().mockResolvedValue({
+  it("returns the submit_answer RPC result for an incorrect grade", async () => {
+    const submitAnswer = vi.fn().mockResolvedValue({
+      isCorrect: false,
       remainingHearts: 4,
       updatedAt: "2026-09-19T00:01:00Z",
+      correctChoiceText: "Yes",
     });
     const result = await submitAnswerForRequest(
       {
@@ -150,11 +149,11 @@ describe("submitAnswerForRequest", () => {
       {
         getUser: vi.fn().mockResolvedValue({ id: "user-1" }),
         loadGradeContext: vi.fn().mockResolvedValue(ownedContext()),
-        consumeHeart,
+        submitAnswer,
       },
     );
 
-    expect(consumeHeart).toHaveBeenCalledWith(sessionId, phraseId);
+    expect(submitAnswer).toHaveBeenCalledWith(sessionId, phraseId, "No", "en");
     expect(result.status).toBe(200);
     if (result.status !== 200) {
       throw new Error("expected graded answer");
@@ -165,7 +164,7 @@ describe("submitAnswerForRequest", () => {
   });
 
   it("rejects grading when remaining hearts are 0", async () => {
-    const consumeHeart = vi.fn();
+    const submitAnswer = vi.fn();
     const result = await submitAnswerForRequest(
       {
         sessionId,
@@ -180,43 +179,18 @@ describe("submitAnswerForRequest", () => {
             hearts: { remainingHearts: 0, updatedAt: "2026-09-19T00:00:00Z" },
           }),
         ),
-        consumeHeart,
+        submitAnswer,
       },
     );
 
     expect(result.status).toBe(403);
-    expect(consumeHeart).not.toHaveBeenCalled();
+    expect(submitAnswer).not.toHaveBeenCalled();
   });
 
-  it("returns 429 after the hourly submit-answer limit is exceeded", async () => {
-    const loadGradeContext = vi.fn();
-    for (let i = 0; i < SUBMIT_ANSWER_RATE_LIMIT_PER_HOUR; i += 1) {
-      consumeRateLimit(
-        "submit-answer:user-1",
-        SUBMIT_ANSWER_RATE_LIMIT_PER_HOUR,
-      );
-    }
-
-    const result = await submitAnswerForRequest(
-      {
-        sessionId,
-        phraseId,
-        selectedChoiceText: "Yes",
-        locale: "en",
-      },
-      {
-        getUser: vi.fn().mockResolvedValue({ id: "user-1" }),
-        loadGradeContext,
-        consumeHeart: vi.fn(),
-      },
-    );
-
-    expect(result.status).toBe(429);
-    expect(result.body).toEqual({ error: "Rate limit exceeded" });
-    expect(loadGradeContext).not.toHaveBeenCalled();
-  });
-
-  it("grades normally while the caller is still inside the hourly limit", async () => {
+  it("returns 429 when submit_answer reports Rate limit exceeded", async () => {
+    const submitAnswer = vi
+      .fn()
+      .mockRejectedValue(new Error("Rate limit exceeded"));
     const result = await submitAnswerForRequest(
       {
         sessionId,
@@ -227,7 +201,32 @@ describe("submitAnswerForRequest", () => {
       {
         getUser: vi.fn().mockResolvedValue({ id: "user-1" }),
         loadGradeContext: vi.fn().mockResolvedValue(ownedContext()),
-        consumeHeart: vi.fn(),
+        submitAnswer,
+      },
+    );
+
+    expect(result.status).toBe(429);
+    expect(result.body).toEqual({ error: "Rate limit exceeded" });
+    expect(submitAnswer).toHaveBeenCalled();
+  });
+
+  it("grades normally when submit_answer succeeds inside the hourly limit", async () => {
+    const result = await submitAnswerForRequest(
+      {
+        sessionId,
+        phraseId,
+        selectedChoiceText: "Yes",
+        locale: "en",
+      },
+      {
+        getUser: vi.fn().mockResolvedValue({ id: "user-1" }),
+        loadGradeContext: vi.fn().mockResolvedValue(ownedContext()),
+        submitAnswer: vi.fn().mockResolvedValue({
+          isCorrect: true,
+          remainingHearts: 5,
+          updatedAt: "2026-09-19T00:00:00Z",
+          correctChoiceText: "Yes",
+        }),
       },
     );
 
@@ -310,6 +309,16 @@ describe("submit-answer latency", () => {
     expect(source).toMatch(/export async function GET/);
     expect(source).not.toMatch(/getSessionOwner/);
     expect(source).not.toMatch(/isPhraseAssigned/);
+  });
+
+  it("does not use an in-memory submit-answer rate limiter", () => {
+    const source = readFileSync(
+      join(srcDir, "lib/quiz/submit-answer.ts"),
+      "utf8",
+    );
+    expect(source).not.toMatch(/consumeRateLimit/);
+    expect(source).toMatch(/RATE_LIMIT_EXCEEDED_ERROR/);
+    expect(source).toMatch(/loader\.submitAnswer/);
   });
 
   it("warms quiz APIs from the shared layout helper", () => {

@@ -8,6 +8,7 @@
 > | v1.2 | 2026-09-20 | Issue #24 / #37: `price_usd` を numeric(10,2) に拡張し `is_active` を追加 (`006`) |
 > | v1.3 | 2026-09-20 | Issue #42: `is_active=false` を一時非表示に変更（既存購入者は継続プレイ可、`008`） |
 > | v1.4 | 2026-09-21 | Issue #17: `create_quiz_session` を同一 user 20回/時に制限（`009`） |
+> | v1.5 | 2026-09-21 | Issue #17 follow-up: `submit_answer` を `submit_answer_calls` COUNT で 60回/時に制限（`010`） |
 
 マイグレーション適用順:
 
@@ -20,6 +21,7 @@
 7. `007_diversify_seed_correct_index.sql` — シードの `correct_choice_index` を 0/1/2 に分散（Issue #16）
 8. `008_inactive_pack_purchased_play.sql` — `is_active=false` でも購入済みは `create_quiz_session` 可（Issue #42）
 9. `009_quiz_start_rate_limit.sql` — `quiz_sessions(user_id, created_at)` インデックスと `create_quiz_session` の 20回/時制限（Issue #17）
+10. `010_submit_answer_rate_limit.sql` — `submit_answer_calls` と `submit_answer` の 60回/時制限（Issue #17 follow-up）
 
 ---
 
@@ -46,6 +48,7 @@ erDiagram
     content_packs ||--o{ user_purchases : "1対多"
     profiles ||--o{ quiz_sessions : "1対多"
     profiles ||--o{ user_purchases : "1対多"
+    profiles ||--o{ submit_answer_calls : "1対多"
     quiz_sessions ||--o{ quiz_session_questions : "ちょうど5"
     quiz_sessions ||--o{ quiz_attempts : "誤答1回目"
     phrases ||--o{ quiz_session_questions : "割当"
@@ -111,6 +114,12 @@ erDiagram
         uuid user_id FK "ON DELETE CASCADE"
         text pack_id FK "ON DELETE RESTRICT"
         timestamptz created_at
+    }
+
+    submit_answer_calls {
+        uuid id PK
+        uuid user_id FK "ON DELETE CASCADE"
+        timestamptz called_at
     }
 ```
 
@@ -190,7 +199,17 @@ Zod（`PhraseRecordSchema`）は教材検証用に 8 言語キーと 3 択タプ
 
 UNIQUE (`user_id`, `pack_id`) が Webhook 再送の冪等キー。SELECT は本人のみ。INSERT は Admin の `grantPurchase` のみ（エラーコード `23505` は duplicate として成功扱い）。`stripe_payment_intent_id` で返金時の行特定を行う。`user_id` は profiles ON DELETE CASCADE、`pack_id` は content_packs ON DELETE RESTRICT（購入履歴をパック削除から守る）。
 
-### 3-8. FK ON DELETE 方針（Issue #25）
+### 3-8. `submit_answer_calls`
+
+`submit_answer` の hourly レート制限用ログ。クライアントポリシーなし（RPC の SECURITY DEFINER のみが INSERT）。`user_id` は profiles ON DELETE CASCADE。1時間より古い行は既存 Vercel Cron（`/api/internal/cleanup-anonymous-users`）が削除する。
+
+| カラム | 型 | 制約 | 説明 |
+|---|---|---|
+| `id` | uuid | PK | |
+| `user_id` | uuid | FK → profiles ON DELETE CASCADE | 呼び出しユーザー |
+| `called_at` | timestamptz | default now() | 呼び出し時刻 |
+
+### 3-9. FK ON DELETE 方針（Issue #25）
 
 `001_init.sql` ではパック/フレーズ参照が `ON DELETE CASCADE` だった。`005_fk_on_delete_policy.sql` で以下を `RESTRICT` に付け替える。パックのカタログ非表示は物理 DELETE せず、`content_packs.is_active`（Issue #37 / #42）で一時非表示にする。既存購入者のプレイは `008` で継続できる。
 
@@ -215,6 +234,7 @@ UNIQUE (`user_id`, `pack_id`) が Webhook 再送の冪等キー。SELECT は本�
 - `idx_quiz_session_questions_session_id` / `idx_quiz_session_questions_phrase_id`
 - `idx_quiz_attempts_session_id` / `idx_quiz_attempts_phrase_id`
 - `idx_user_purchases_user_id` / `idx_user_purchases_pack_id`
+- `idx_submit_answer_calls_user_id_called_at`（010、時間窓の COUNT 用）
 
 複合 UNIQUE は制約側でインデックス済み。
 
@@ -250,9 +270,11 @@ UNIQUE (`user_id`, `pack_id`) が Webhook 再送の冪等キー。SELECT は本�
 戻り: `is_correct`, `remaining_hearts`, `updated_at`, `correct_choice_text`
 
 1. 未認証 / 他人セッション / 未割当 phrase は例外
-2. `choices_by_lang[locale][correct_choice_index]` と選択テキストを比較（`ja` は `en`）
-3. 誤答時のみ内部で `consume_heart` を実行
-4. 正答・誤答とも `correct_choice_text` を返す（判定後のみ）。`POST /api/quiz/start` と `GET /api/phrases` は正解テキストも `correct_choice_index` も含めない
+2. 直近1時間の同一 `user_id` の `submit_answer_calls` が 60 件以上 → `Rate limit exceeded`（`SUBMIT_ANSWER_RATE_LIMIT_PER_HOUR`。`create_quiz_session` と同じ例外文言）
+3. `choices_by_lang[locale][correct_choice_index]` と選択テキストを比較（`ja` は `en`）
+4. 誤答時のみ内部で `consume_heart` を実行
+5. 正誤・ハート減算の成否に関わらず `submit_answer_calls` へ 1 行 INSERT
+6. 正答・誤答とも `correct_choice_text` を返す（判定後のみ）。`POST /api/quiz/start` と `GET /api/phrases` は正解テキストも `correct_choice_index` も含めない。BFF がこの例外を HTTP 429 に写像する
 
 ### 5-4. `sync_profile(p_preferred_language text default null)`
 
@@ -279,6 +301,7 @@ UNIQUE (`user_id`, `pack_id`) が Webhook 再送の冪等キー。SELECT は本�
 | `quiz_session_questions` | 自分のセッション経由 |
 | `user_purchases` | `auth.uid() = user_id` |
 | `quiz_attempts` | ポリシーなし（読めない） |
+| `submit_answer_calls` | ポリシーなし（読めない）。authenticated からも REVOKE |
 
 ---
 

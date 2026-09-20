@@ -1,4 +1,7 @@
-import { ANONYMOUS_RETENTION_DAYS } from "@/lib/constants/app";
+import {
+  ANONYMOUS_RETENTION_DAYS,
+  RATE_LIMIT_WINDOW_MS,
+} from "@/lib/constants/app";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -8,10 +11,19 @@ export type CleanupProfile = {
   created_at: string;
 };
 
-export type AnonymousCleanupStore = {
+export type SubmitAnswerCallRow = {
+  id: string;
+  called_at: string;
+};
+
+export type AnonymousUserCleanupStore = {
   listAnonymousProfiles: () => Promise<CleanupProfile[]>;
   listPurchasedUserIds: (userIds: string[]) => Promise<string[]>;
   deleteAuthUser: (userId: string) => Promise<void>;
+};
+
+export type AnonymousCleanupStore = AnonymousUserCleanupStore & {
+  deleteStaleSubmitAnswerCalls: (cutoffIso: string) => Promise<number>;
 };
 
 export function selectAnonymousUserIdsForCleanup(input: {
@@ -35,8 +47,21 @@ export function selectAnonymousUserIdsForCleanup(input: {
     .map((profile) => profile.id);
 }
 
+export function selectStaleSubmitAnswerCallIds(input: {
+  rows: SubmitAnswerCallRow[];
+  now?: Date;
+  retentionMs?: number;
+}): string[] {
+  const now = input.now ?? new Date();
+  const retentionMs = input.retentionMs ?? RATE_LIMIT_WINDOW_MS;
+  const cutoffMs = now.getTime() - retentionMs;
+  return input.rows
+    .filter((row) => Date.parse(row.called_at) < cutoffMs)
+    .map((row) => row.id);
+}
+
 export async function cleanupAnonymousUsers(
-  store: AnonymousCleanupStore,
+  store: AnonymousUserCleanupStore,
   options?: { now?: Date; retentionDays?: number },
 ): Promise<{ deleted: number; failed: number }> {
   const profiles = await store.listAnonymousProfiles();
@@ -86,7 +111,14 @@ export async function handleAnonymousCleanupRequest(input: {
   store: AnonymousCleanupStore;
   now?: Date;
 }): Promise<
-  | { status: 200; body: { deleted: number; failed: number } }
+  | {
+      status: 200;
+      body: {
+        deleted: number;
+        failed: number;
+        submitAnswerCallsDeleted: number;
+      };
+    }
   | { status: 401 | 500; body: { error: string } }
 > {
   if (!isAuthorizedCronRequest(input.authorizationHeader, input.cronSecret)) {
@@ -95,7 +127,18 @@ export async function handleAnonymousCleanupRequest(input: {
 
   try {
     const result = await cleanupAnonymousUsers(input.store, { now: input.now });
-    return { status: 200, body: result };
+    const cutoff = new Date(
+      (input.now ?? new Date()).getTime() - RATE_LIMIT_WINDOW_MS,
+    ).toISOString();
+    const submitAnswerCallsDeleted =
+      await input.store.deleteStaleSubmitAnswerCalls(cutoff);
+    console.info("Submit answer call cleanup", {
+      deleted: submitAnswerCallsDeleted,
+    });
+    return {
+      status: 200,
+      body: { ...result, submitAnswerCallsDeleted },
+    };
   } catch (error) {
     console.error("Anonymous user cleanup failed", error);
     return { status: 500, body: { error: "Unable to clean up anonymous users" } };

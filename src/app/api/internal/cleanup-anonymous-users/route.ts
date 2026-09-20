@@ -48,6 +48,17 @@ function createAnonymousCleanupStore() {
         throw error;
       }
     },
+    async deleteStaleSubmitAnswerCalls(cutoffIso: string) {
+      const { data, error } = await admin
+        .from("submit_answer_calls")
+        .delete()
+        .lt("called_at", cutoffIso)
+        .select("id");
+      if (error) {
+        throw error;
+      }
+      return data?.length ?? 0;
+    },
   };
 }
 
