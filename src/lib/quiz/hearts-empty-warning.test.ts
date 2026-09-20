@@ -30,6 +30,13 @@ describe("QuizPlay hearts empty warning", () => {
     expect(source).toMatch(/gradeError/);
   });
 
+  it("shows a recoverable invalidChoice screen instead of crashing", () => {
+    expect(source).toMatch(/invalidChoice/);
+    expect(source).toMatch(/INVALID_CHOICE_ERROR/);
+    expect(source).toMatch(/reloadQuiz/);
+    expect(source).toMatch(/window\.location\.reload/);
+  });
+
   it("grades from submit-answer instead of a local correctChoiceText compare", () => {
     const choose = source.slice(
       source.indexOf("onChoose"),

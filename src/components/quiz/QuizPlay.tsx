@@ -14,6 +14,7 @@ import {
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { canPlayWithHearts } from "@/lib/hearts/recovery";
 import type { SupportedLocale } from "@/lib/i18n/locales";
+import { INVALID_CHOICE_ERROR } from "@/lib/constants/app";
 import type { PreparedQuestion } from "@/lib/quiz/prepare-question";
 
 type QuizPlayProps = {
@@ -34,7 +35,11 @@ export function QuizPlay({ packId }: QuizPlayProps) {
   } = useAuth();
   const [loading, setLoading] = useState(true);
   const [errorKey, setErrorKey] = useState<
-    "notConfigured" | "paidLocked" | "startError" | null
+    | "notConfigured"
+    | "paidLocked"
+    | "startError"
+    | "invalidChoice"
+    | null
   >(configured ? null : "notConfigured");
   const [hearts, setHearts] = useState(profile?.hearts ?? 5);
   const [queue, setQueue] = useState<PreparedQuestion[]>([]);
@@ -192,8 +197,13 @@ export function QuizPlay({ packId }: QuizPlayProps) {
           setRevealedCorrectText(result.correctChoiceText);
           setHearts(result.remainingHearts);
           updateHearts(result.remainingHearts, result.updatedAt);
-        } catch {
-          setSubmitError(true);
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "";
+          if (message.includes(INVALID_CHOICE_ERROR)) {
+            setErrorKey("invalidChoice");
+          } else {
+            setSubmitError(true);
+          }
           submittingRef.current = false;
           setSubmitting(false);
         }
@@ -227,6 +237,15 @@ export function QuizPlay({ packId }: QuizPlayProps) {
           {status}
           {errorKey === "paidLocked" ? (
             <p className="mt-4 text-sm text-cream/65">{t("paidLockedHint")}</p>
+          ) : null}
+          {errorKey === "invalidChoice" ? (
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className="mt-8 inline-flex rounded-full bg-cream px-6 py-3 text-sm font-semibold text-ink"
+            >
+              {t("reloadQuiz")}
+            </button>
           ) : null}
           <div className="mt-8">
             <Link className="text-sm underline decoration-cream/30" href="/">

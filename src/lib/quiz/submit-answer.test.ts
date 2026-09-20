@@ -187,6 +187,27 @@ describe("submitAnswerForRequest", () => {
     expect(submitAnswer).not.toHaveBeenCalled();
   });
 
+  it("returns 409 invalid_choice when submit_answer rejects an unknown choice", async () => {
+    const result = await submitAnswerForRequest(
+      {
+        sessionId,
+        phraseId,
+        selectedChoiceText: "not-a-real-choice",
+        locale: "en",
+      },
+      {
+        getUser: vi.fn().mockResolvedValue({ id: "user-1" }),
+        loadGradeContext: vi.fn().mockResolvedValue(ownedContext()),
+        submitAnswer: vi
+          .fn()
+          .mockRejectedValue(new Error("Invalid choice")),
+      },
+    );
+
+    expect(result.status).toBe(409);
+    expect(result.body).toEqual({ error: "invalid_choice" });
+  });
+
   it("returns 429 when submit_answer reports Rate limit exceeded", async () => {
     const submitAnswer = vi
       .fn()
@@ -293,6 +314,29 @@ describe("requestSubmitAnswer", () => {
         locale: "en",
       }),
     ).rejects.toThrow(/Unable to grade answer/);
+    vi.unstubAllGlobals();
+  });
+
+  it("surfaces invalid_choice from a 409 grading response", async () => {
+    const { requestSubmitAnswer } = await import(
+      "@/lib/quiz/submit-answer-client"
+    );
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: false,
+        json: async () => ({ error: "invalid_choice" }),
+      }),
+    );
+
+    await expect(
+      requestSubmitAnswer({
+        sessionId,
+        phraseId,
+        selectedChoiceText: "stale-text",
+        locale: "en",
+      }),
+    ).rejects.toThrow(/^invalid_choice$/);
     vi.unstubAllGlobals();
   });
 });

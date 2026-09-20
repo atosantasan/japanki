@@ -50,6 +50,8 @@
     "paidLockedHint": "If you just paid, wait a moment and reload this page.",
     "startError": "Could not start this pack.",
     "gradeError": "Could not grade this answer. Please try again.",
+    "invalidChoice": "This question may be out of date. Reload the questions to continue.",
+    "reloadQuiz": "Reload questions",
     "heartsEmpty": "No hearts left. They refill over time.",
     "notConfigured": "Supabase is not configured yet.",
     "audioFallback": "Phrase audio is not available yet, so Japanki is playing a generated tone."

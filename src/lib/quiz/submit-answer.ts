@@ -1,5 +1,9 @@
 import { z } from "zod";
-import { RATE_LIMIT_EXCEEDED_ERROR } from "@/lib/constants/app";
+import {
+  INVALID_CHOICE_ERROR,
+  INVALID_CHOICE_RPC_ERROR,
+  RATE_LIMIT_EXCEEDED_ERROR,
+} from "@/lib/constants/app";
 import { SUPPORTED_LOCALES, type SupportedLocale } from "@/lib/i18n/locales";
 import type {
   ConsumeHeartResult,
@@ -49,7 +53,7 @@ export type SubmitAnswerLoader = {
 
 export type SubmitAnswerResponse =
   | { status: 200; body: SubmitAnswerResult }
-  | { status: 400 | 401 | 403 | 404 | 429 | 500; body: { error: string } };
+  | { status: 400 | 401 | 403 | 404 | 409 | 429 | 500; body: { error: string } };
 
 export async function submitAnswerForRequest(
   input: SubmitAnswerBody,
@@ -93,6 +97,9 @@ export async function submitAnswerForRequest(
     const message = error instanceof Error ? error.message : "";
     if (message.includes(RATE_LIMIT_EXCEEDED_ERROR)) {
       return { status: 429, body: { error: RATE_LIMIT_EXCEEDED_ERROR } };
+    }
+    if (message.includes(INVALID_CHOICE_RPC_ERROR)) {
+      return { status: 409, body: { error: INVALID_CHOICE_ERROR } };
     }
     console.error("Failed to submit answer", error);
     return { status: 500, body: { error: "Unable to grade answer" } };
