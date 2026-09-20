@@ -6,7 +6,8 @@
 > | v1.0 | 2026-09-19 | `supabase/migrations/001`〜`003` の as-is |
 > | v1.1 | 2026-09-20 | Issue #25: パック/フレーズ FK を ON DELETE RESTRICT に明示 (`005`) |
 > | v1.2 | 2026-09-20 | Issue #24 / #37: `price_usd` を numeric(10,2) に拡張し `is_active` を追加 (`006`) |
-| v1.3 | 2026-09-20 | Issue #42: `is_active=false` を一時非表示に変更（既存購入者は継続プレイ可、`008`） |
+> | v1.3 | 2026-09-20 | Issue #42: `is_active=false` を一時非表示に変更（既存購入者は継続プレイ可、`008`） |
+> | v1.4 | 2026-09-21 | Issue #17: `create_quiz_session` を同一 user 20回/時に制限（`009`） |
 
 マイグレーション適用順:
 
@@ -18,6 +19,7 @@
 6. `006_content_packs_price_and_active.sql` — `price_usd` numeric(10,2) と論理削除 `is_active`
 7. `007_diversify_seed_correct_index.sql` — シードの `correct_choice_index` を 0/1/2 に分散（Issue #16）
 8. `008_inactive_pack_purchased_play.sql` — `is_active=false` でも購入済みは `create_quiz_session` 可（Issue #42）
+9. `009_quiz_start_rate_limit.sql` — `quiz_sessions(user_id, created_at)` インデックスと `create_quiz_session` の 20回/時制限（Issue #17）
 
 ---
 
@@ -209,7 +211,7 @@ UNIQUE (`user_id`, `pack_id`) が Webhook 再送の冪等キー。SELECT は本�
 `001_init.sql` で作成:
 
 - `idx_phrases_pack_id`
-- `idx_quiz_sessions_user_id` / `idx_quiz_sessions_pack_id`
+- `idx_quiz_sessions_user_id` / `idx_quiz_sessions_pack_id` / `idx_quiz_sessions_user_id_created_at`（009、時間窓の COUNT 用）
 - `idx_quiz_session_questions_session_id` / `idx_quiz_session_questions_phrase_id`
 - `idx_quiz_attempts_session_id` / `idx_quiz_attempts_phrase_id`
 - `idx_user_purchases_user_id` / `idx_user_purchases_pack_id`
@@ -229,9 +231,10 @@ UNIQUE (`user_id`, `pack_id`) が Webhook 再送の冪等キー。SELECT は本�
 1. 未認証 → `Not authenticated`
 2. パックなし、無料で `is_active = false`、または有料・非アクティブで未購入 → `Content pack not found`
 3. 有料かつアクティブで未購入 → `Purchased pack permission required`（有料・非アクティブで購入済みなら例外で作成可）
-4. セッション INSERT
-5. `order by random() limit 5` で questions INSERT
-6. 5 問に満たなければ例外（トランザクションロールバック）
+4. 直近1時間の同一 `user_id` の `quiz_sessions` が 20 件以上 → `Rate limit exceeded`（`QUIZ_START_RATE_LIMIT_PER_HOUR`）
+5. セッション INSERT
+6. `order by random() limit 5` で questions INSERT
+7. 5 問に満たなければ例外（トランザクションロールバック）
 
 ### 5-2. `consume_heart(session_id_param uuid, phrase_id_param uuid)`
 

@@ -135,6 +135,7 @@ graph TD
         SK["STRIPE_SECRET_KEY"]
         SSK["SUPABASE_SECRET_KEY"]
         WHS["STRIPE_WEBHOOK_SECRET"]
+        CRON["CRON_SECRET"]
     end
     subgraph Client ["公開可"]
         SUL["NEXT_PUBLIC_SUPABASE_URL"]
@@ -154,6 +155,9 @@ graph TD
 | Checkout | 連携済み Identity 必須、所有済みは 400、付与は Webhook のみ |
 | Webhook | `constructEvent` 署名 |
 | 認証 next | 相対パスのみ |
+| クイズ開始 | RPC `create_quiz_session` が同一 user 20回/時で `Rate limit exceeded`。BFF は 429 |
+| 回答送信 | `POST /api/quiz/submit-answer` が user_id 単位 60回/時、429 |
+| 匿名掃除 | `GET/POST /api/internal/cleanup-anonymous-users` は `CRON_SECRET` Bearer のみ |
 
 ### 4-3. Identity 衝突
 
@@ -170,7 +174,26 @@ graph TD
 
 ---
 
-## 6. 将来考慮（未実装）
+## 6. 運用対策（Issue #17 対応済み）
+
+匿名サインインと RPC 実行権限は残しつつ、無制限生成を次の閾値で抑える。値は `src/lib/constants/app.ts`。
+
+| 対策 | 実装 | 閾値 |
+|---|---|---|
+| 匿名アカウント掃除 | Vercel Cron（毎日 03:00 UTC）が `GET /api/internal/cleanup-anonymous-users` を呼び、`auth.users` を削除。`profiles` / `quiz_sessions` / `quiz_session_questions` / `quiz_attempts` / `user_purchases` は ON DELETE CASCADE | `is_anonymous = true` かつ `created_at` が `ANONYMOUS_RETENTION_DAYS`（30日）以上前、かつ `user_purchases` なし |
+| セッション開始レート制限 | `create_quiz_session` が直近1時間の `quiz_sessions` を COUNT。専用カウンタテーブルは作らない。`idx_quiz_sessions_user_id_created_at` | `QUIZ_START_RATE_LIMIT_PER_HOUR` = 20。超過は `Rate limit exceeded` / HTTP 429 |
+| 回答送信レート制限 | `POST /api/quiz/submit-answer` の in-memory sliding window（user_id、インスタンス単位） | `SUBMIT_ANSWER_RATE_LIMIT_PER_HOUR` = 60。超過は `Rate limit exceeded` / HTTP 429 |
+
+### 本番適用（手動）
+
+1. Supabase SQL Editor で `supabase/migrations/009_quiz_start_rate_limit.sql` を適用する。
+2. Vercel 環境変数に `CRON_SECRET` を設定する（`NEXT_PUBLIC_` にしない）。Vercel Cron は `Authorization: Bearer ${CRON_SECRET}` を付ける。
+3. `vercel.json` の cron はデプロイと同時に有効になる。Hobby は日次 cron まで。手動確認は `Authorization: Bearer $CRON_SECRET` 付きで GET または POST。
+4. pg_cron は使わない（このリポジトリのテストと Vercel だけで完結させるため）。
+
+`quiz_sessions.user_id` / `user_purchases.user_id` は当初から `profiles` ON DELETE CASCADE。Issue #25 の pack/phrase FK 変更対象外。`auth.users` 削除で孤児は残らない。
+
+## 7. 将来考慮（未実装）
 
 | 項目 | 現状 | 候補 |
 |---|---|---|
@@ -180,3 +203,4 @@ graph TD
 | オフライン出題 | 不可 | 無料パックの Precache（有料は不可） |
 | 追加パック | 2 パックのみ | `content_packs` 行追加 + シード Zod レビュー |
 | サブスク | 都度 2.99 USD | 現状スコープ外 |
+| 回答 RPC 直叩き | `submit_answer` は authenticated に GRANT 済み。UI は BFF のみ | 必要なら RPC 側にも回数制限 |
