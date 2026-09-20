@@ -1,6 +1,7 @@
 export type ContentPackAccess = {
   id: string;
   is_free: boolean;
+  is_active: boolean;
 };
 
 export type PhraseAccessResult =
@@ -16,7 +17,7 @@ export function resolvePhraseAccess(input: {
     return { ok: false, status: 401, error: "Not authenticated" };
   }
 
-  if (!input.pack) {
+  if (!input.pack || !input.pack.is_active) {
     return { ok: false, status: 404, error: "Content pack not found" };
   }
 

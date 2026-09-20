@@ -2,13 +2,14 @@ import {
   PublicPhraseRecordSchema,
   type PublicPhraseRecord,
 } from "@/lib/validation/translation-schema";
-import { resolvePhraseAccess } from "@/lib/phrases/access";
+import {
+  resolvePhraseAccess,
+  type ContentPackAccess,
+} from "@/lib/phrases/access";
 
 export type PhraseRequestLoader = {
   getUser: () => Promise<{ id: string } | null>;
-  getPack: (
-    packId: string,
-  ) => Promise<{ id: string; is_free: boolean } | null>;
+  getPack: (packId: string) => Promise<ContentPackAccess | null>;
   hasPurchase: (userId: string, packId: string) => Promise<boolean>;
   getPhrases: (packId: string) => Promise<unknown[]>;
 };

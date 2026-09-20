@@ -4,12 +4,17 @@
 > | バージョン | 日付 | 変更内容 |
 > |---|---|---|
 > | v1.0 | 2026-09-19 | `supabase/migrations/001`〜`003` の as-is |
+> | v1.1 | 2026-09-20 | Issue #25: パック/フレーズ FK を ON DELETE RESTRICT に明示 (`005`) |
+> | v1.2 | 2026-09-20 | Issue #24 / #37: `price_usd` を numeric(10,2) に拡張し `is_active` を追加 (`006`) |
 
 マイグレーション適用順:
 
 1. `001_init.sql` — テーブル、インデックス、RPC（`create_quiz_session`, `consume_heart`）、RLS
 2. `002_sync_profile.sql` — `sync_profile`（Identity 連携後のプロファイル同期）
 3. `003_seed_packs.sql` — Survival / Travel と各 5 フレーズ
+4. `004_submit_answer_and_billing_guards.sql` — `submit_answer` RPC と購入履歴の保護
+5. `005_fk_on_delete_policy.sql` — パック/フレーズ参照 FK を ON DELETE RESTRICT に付け替え
+6. `006_content_packs_price_and_active.sql` — `price_usd` numeric(10,2) と論理削除 `is_active`
 
 ---
 
@@ -56,14 +61,15 @@ erDiagram
         jsonb title
         jsonb description
         boolean is_free
-        numeric price_usd
+        boolean is_active "DEFAULT true"
+        numeric price_usd "numeric(10,2)"
         text stripe_price_id
         timestamptz created_at
     }
 
     phrases {
         uuid id PK
-        text pack_id FK
+        text pack_id FK "ON DELETE RESTRICT"
         text romaji
         text japanese
         text audio_url
@@ -75,30 +81,30 @@ erDiagram
 
     quiz_sessions {
         uuid id PK
-        uuid user_id FK
-        text pack_id FK
+        uuid user_id FK "ON DELETE CASCADE"
+        text pack_id FK "ON DELETE RESTRICT"
         timestamptz completed_at "未使用"
         timestamptz created_at
     }
 
     quiz_session_questions {
         uuid id PK
-        uuid session_id FK
-        uuid phrase_id FK
+        uuid session_id FK "ON DELETE CASCADE"
+        uuid phrase_id FK "ON DELETE RESTRICT"
         integer position "1..5"
     }
 
     quiz_attempts {
         uuid id PK
-        uuid session_id FK
-        uuid phrase_id FK
+        uuid session_id FK "ON DELETE CASCADE"
+        uuid phrase_id FK "ON DELETE RESTRICT"
         timestamptz first_incorrect_at
     }
 
     user_purchases {
         uuid id PK
-        uuid user_id FK
-        text pack_id FK
+        uuid user_id FK "ON DELETE CASCADE"
+        text pack_id FK "ON DELETE RESTRICT"
         timestamptz created_at
     }
 ```
@@ -130,17 +136,18 @@ erDiagram
 | `id` | text PK | `survival` / `travel` |
 | `title` / `description` | jsonb | 8 言語キー |
 | `is_free` | boolean | 無料判定 |
-| `price_usd` | numeric(4,2) | Checkout の `price_data` に使用（stripe_price_id が無い場合） |
+| `is_active` | boolean NOT NULL DEFAULT true | 論理削除フラグ。Issue #37。false でカタログ/新規プレイから除外 |
+| `price_usd` | numeric(10,2) | Checkout の `price_data` に使用（stripe_price_id が無い場合）。Issue #24 で (4,2) から拡張 |
 | `stripe_price_id` | text | 設定時は Stripe Price を優先 |
 
-SELECT は全員可。
+SELECT は全員可（購入履歴のタイトル表示のため非アクティブ行も読める）。パックの物理削除は子テーブル FK が RESTRICT のため拒否される。廃止は `is_active = false` の論理削除（Issue #25 の TODO を #37 / `006` で解消）。
 
 ### 3-3. `phrases`
 
 | カラム | 型 | 説明 |
 |---|---|---|
 | `id` | uuid | シードは固定 UUID |
-| `pack_id` | text FK | 所属パック |
+| `pack_id` | text FK → content_packs ON DELETE RESTRICT | 所属パック。パック物理削除は拒否 |
 | `romaji` / `japanese` | text | 出題表示 |
 | `audio_url` | text | 例: `/audio/arigatou.mp3` |
 | `translations` | jsonb | 8 言語の訳 |
@@ -154,7 +161,7 @@ Zod（`PhraseRecordSchema`）は教材検証用に 8 言語キーと 3 択タプ
 
 ### 3-4. `quiz_sessions`
 
-ユーザーとパックに紐づく 1 プレイ。`completed_at` は現行 UI から更新されない。
+ユーザーとパックに紐づく 1 プレイ。`completed_at` は現行 UI から更新されない。`user_id` は profiles ON DELETE CASCADE、`pack_id` は content_packs ON DELETE RESTRICT。
 
 ### 3-5. `quiz_session_questions`
 
@@ -164,11 +171,11 @@ Zod（`PhraseRecordSchema`）は教材検証用に 8 言語キーと 3 択タプ
 | UNIQUE (`session_id`, `position`) | 同一位置に 2 問置かない |
 | UNIQUE (`session_id`, `phrase_id`) | 同一セッションで同一 phrase を重複割当しない |
 
-クライアント INSERT 不可。SELECT は自分のセッションのみ（QuizPlay が順序取得に使用）。
+クライアント INSERT 不可。SELECT は自分のセッションのみ（QuizPlay が順序取得に使用）。`session_id` は quiz_sessions ON DELETE CASCADE、`phrase_id` は phrases ON DELETE RESTRICT（出題済みフレーズの物理削除を拒否し履歴を保持）。
 
 ### 3-6. `quiz_attempts`
 
-同一 (`session_id`, `phrase_id`) は 1 行。初回誤答時刻のみ保持。SELECT ポリシーなし（クライアントは読めない）。INSERT は `consume_heart` / `submit_answer` のみ。
+同一 (`session_id`, `phrase_id`) は 1 行。初回誤答時刻のみ保持。SELECT ポリシーなし（クライアントは読めない）。INSERT は `consume_heart` / `submit_answer` のみ。`session_id` は quiz_sessions ON DELETE CASCADE、`phrase_id` は phrases ON DELETE RESTRICT（ハート減算履歴を保持するためフレーズ物理削除を拒否）。
 
 | 制約 | 意味 |
 |---|---|
@@ -176,7 +183,21 @@ Zod（`PhraseRecordSchema`）は教材検証用に 8 言語キーと 3 択タプ
 
 ### 3-7. `user_purchases`
 
-UNIQUE (`user_id`, `pack_id`) が Webhook 再送の冪等キー。SELECT は本人のみ。INSERT は Admin の `grantPurchase` のみ（エラーコード `23505` は duplicate として成功扱い）。`stripe_payment_intent_id` で返金時の行特定を行う。
+UNIQUE (`user_id`, `pack_id`) が Webhook 再送の冪等キー。SELECT は本人のみ。INSERT は Admin の `grantPurchase` のみ（エラーコード `23505` は duplicate として成功扱い）。`stripe_payment_intent_id` で返金時の行特定を行う。`user_id` は profiles ON DELETE CASCADE、`pack_id` は content_packs ON DELETE RESTRICT（購入履歴をパック削除から守る）。
+
+### 3-8. FK ON DELETE 方針（Issue #25）
+
+`001_init.sql` ではパック/フレーズ参照が `ON DELETE CASCADE` だった。`005_fk_on_delete_policy.sql` で以下を `RESTRICT` に付け替える。パック廃止は物理 DELETE せず、`006` の `content_packs.is_active`（Issue #37）で論理削除する。
+
+| FK | 参照先 | ON DELETE | 理由 |
+|---|---|---|---|
+| `phrases.pack_id` | `content_packs.id` | RESTRICT | パック誤削除で教材が一括消失する事故を防ぐ |
+| `quiz_sessions.pack_id` | `content_packs.id` | RESTRICT | プレイ履歴をパック削除から守る |
+| `user_purchases.pack_id` | `content_packs.id` | RESTRICT | 購入履歴をパック削除から守る |
+| `quiz_session_questions.phrase_id` | `phrases.id` | RESTRICT | 出題割当履歴を保持する |
+| `quiz_attempts.phrase_id` | `phrases.id` | RESTRICT | ハート減算履歴を保持する |
+| `profiles.id` | `auth.users.id` | CASCADE | 既存。Auth 削除に追随 |
+| `*.user_id` / `*.session_id` | profiles / quiz_sessions | CASCADE | ユーザーまたはセッション削除時の子行掃除 |
 
 ---
 
@@ -203,7 +224,7 @@ UNIQUE (`user_id`, `pack_id`) が Webhook 再送の冪等キー。SELECT は本�
 戻り: `session_id uuid`
 
 1. 未認証 → `Not authenticated`
-2. パックなし → `Content pack not found`
+2. パックなし、または `is_active = false` → `Content pack not found`
 3. 有料かつ未購入 → `Purchased pack permission required`
 4. セッション INSERT
 5. `order by random() limit 5` で questions INSERT
@@ -245,8 +266,8 @@ UNIQUE (`user_id`, `pack_id`) が Webhook 再送の冪等キー。SELECT は本�
 
 | テーブル | SELECT |
 |---|---|
-| `content_packs` | 全員 |
-| `phrases` | `is_free = true` のパックのみ |
+| `content_packs` | 全員（非アクティブ含む。購入履歴表示のため） |
+| `phrases` | `is_free = true AND is_active = true` のパックのみ |
 | `profiles` | `auth.uid() = id` |
 | `quiz_sessions` | `auth.uid() = user_id` |
 | `quiz_session_questions` | 自分のセッション経由 |

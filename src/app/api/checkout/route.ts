@@ -3,6 +3,7 @@ import {
   canStartCheckout,
   hasLinkedIdentity,
   rejectIfAlreadyOwned,
+  resolvePackOffer,
 } from "@/lib/billing/checkout-guard";
 import { getStripe } from "@/lib/billing/stripe";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
@@ -62,15 +63,20 @@ export async function POST(request: Request) {
   }
   const { data: pack } = await admin
     .from("content_packs")
-    .select("id, is_free, price_usd, stripe_price_id, title")
+    .select("id, is_free, is_active, price_usd, stripe_price_id, title")
     .eq("id", packId)
     .maybeSingle();
 
   if (!pack) {
     return NextResponse.json({ error: "Content pack not found" }, { status: 404 });
   }
-  if (pack.is_free) {
-    return NextResponse.json({ error: "Pack is free" }, { status: 400 });
+
+  const offer = resolvePackOffer({
+    is_free: Boolean(pack.is_free),
+    is_active: Boolean(pack.is_active),
+  });
+  if (!offer.ok) {
+    return NextResponse.json({ error: offer.error }, { status: offer.status });
   }
 
   const { data: existingPurchase } = await admin

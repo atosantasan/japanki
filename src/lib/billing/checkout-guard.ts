@@ -28,6 +28,25 @@ export function canStartCheckout(input: {
   return { ok: true };
 }
 
+export type PackOfferResult =
+  | { ok: true }
+  | { ok: false; status: 404; error: "Content pack not found" }
+  | { ok: false; status: 400; error: "Pack is free" };
+
+export function resolvePackOffer(
+  pack: { is_free: boolean; is_active: boolean } | null,
+): PackOfferResult {
+  if (!pack || !pack.is_active) {
+    return { ok: false, status: 404, error: "Content pack not found" };
+  }
+
+  if (pack.is_free) {
+    return { ok: false, status: 400, error: "Pack is free" };
+  }
+
+  return { ok: true };
+}
+
 export type DuplicatePurchaseGuardResult =
   | { ok: true }
   | {

@@ -26,6 +26,7 @@ describe("purchase grant surfaces", () => {
     expect(source).toMatch(/user_purchases/);
     expect(source).toMatch(/customer_email/);
     expect(source).toMatch(/customer_creation/);
+    expect(source).toMatch(/resolvePackOffer/);
   });
 
   it("does not grant purchases from the billing portal API or account page", () => {
