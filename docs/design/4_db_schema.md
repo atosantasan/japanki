@@ -6,6 +6,7 @@
 > | v1.0 | 2026-09-19 | `supabase/migrations/001`〜`003` の as-is |
 > | v1.1 | 2026-09-20 | Issue #25: パック/フレーズ FK を ON DELETE RESTRICT に明示 (`005`) |
 > | v1.2 | 2026-09-20 | Issue #24 / #37: `price_usd` を numeric(10,2) に拡張し `is_active` を追加 (`006`) |
+| v1.3 | 2026-09-20 | Issue #42: `is_active=false` を一時非表示に変更（既存購入者は継続プレイ可、`008`） |
 
 マイグレーション適用順:
 
@@ -16,6 +17,7 @@
 5. `005_fk_on_delete_policy.sql` — パック/フレーズ参照 FK を ON DELETE RESTRICT に付け替え
 6. `006_content_packs_price_and_active.sql` — `price_usd` numeric(10,2) と論理削除 `is_active`
 7. `007_diversify_seed_correct_index.sql` — シードの `correct_choice_index` を 0/1/2 に分散（Issue #16）
+8. `008_inactive_pack_purchased_play.sql` — `is_active=false` でも購入済みは `create_quiz_session` 可（Issue #42）
 
 ---
 
@@ -137,11 +139,11 @@ erDiagram
 | `id` | text PK | `survival` / `travel` |
 | `title` / `description` | jsonb | 8 言語キー |
 | `is_free` | boolean | 無料判定 |
-| `is_active` | boolean NOT NULL DEFAULT true | 論理削除フラグ。Issue #37。false でカタログ/新規プレイから除外 |
+| `is_active` | boolean NOT NULL DEFAULT true | 一時非表示フラグ（既存購入者は継続プレイ可）。Issue #37 / #42。false でカタログと新規購入から除外 |
 | `price_usd` | numeric(10,2) | Checkout の `price_data` に使用（stripe_price_id が無い場合）。Issue #24 で (4,2) から拡張 |
 | `stripe_price_id` | text | 設定時は Stripe Price を優先 |
 
-SELECT は全員可（購入履歴のタイトル表示のため非アクティブ行も読める）。パックの物理削除は子テーブル FK が RESTRICT のため拒否される。廃止は `is_active = false` の論理削除（Issue #25 の TODO を #37 / `006` で解消）。
+SELECT は全員可（購入履歴のタイトル表示のため非アクティブ行も読める）。パックの物理削除は子テーブル FK が RESTRICT のため拒否される。`is_active = false` は一時非表示（コンテンツ更新中など）。無料パックと未購入ユーザーは not found。有料の既存購入者はプレイ継続可（Issue #42 / `008`）。新規 Checkout は非表示中も 404 のまま。
 
 ### 3-3. `phrases`
 
@@ -188,7 +190,7 @@ UNIQUE (`user_id`, `pack_id`) が Webhook 再送の冪等キー。SELECT は本�
 
 ### 3-8. FK ON DELETE 方針（Issue #25）
 
-`001_init.sql` ではパック/フレーズ参照が `ON DELETE CASCADE` だった。`005_fk_on_delete_policy.sql` で以下を `RESTRICT` に付け替える。パック廃止は物理 DELETE せず、`006` の `content_packs.is_active`（Issue #37）で論理削除する。
+`001_init.sql` ではパック/フレーズ参照が `ON DELETE CASCADE` だった。`005_fk_on_delete_policy.sql` で以下を `RESTRICT` に付け替える。パックのカタログ非表示は物理 DELETE せず、`content_packs.is_active`（Issue #37 / #42）で一時非表示にする。既存購入者のプレイは `008` で継続できる。
 
 | FK | 参照先 | ON DELETE | 理由 |
 |---|---|---|---|
@@ -225,8 +227,8 @@ UNIQUE (`user_id`, `pack_id`) が Webhook 再送の冪等キー。SELECT は本�
 戻り: `session_id uuid`
 
 1. 未認証 → `Not authenticated`
-2. パックなし、または `is_active = false` → `Content pack not found`
-3. 有料かつ未購入 → `Purchased pack permission required`
+2. パックなし、無料で `is_active = false`、または有料・非アクティブで未購入 → `Content pack not found`
+3. 有料かつアクティブで未購入 → `Purchased pack permission required`（有料・非アクティブで購入済みなら例外で作成可）
 4. セッション INSERT
 5. `order by random() limit 5` で questions INSERT
 6. 5 問に満たなければ例外（トランザクションロールバック）

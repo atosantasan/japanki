@@ -101,7 +101,7 @@ describe("loadPhrasesForRequest", () => {
     expect(JSON.stringify(result.body)).not.toContain("correct_choice_index");
   });
 
-  it("returns 404 when the pack is inactive", async () => {
+  it("returns 404 when a free pack is inactive", async () => {
     const hasPurchase = vi.fn();
     const getPhrases = vi.fn();
 
@@ -119,6 +119,46 @@ describe("loadPhrasesForRequest", () => {
     expect(result.status).toBe(404);
     expect(result.body).toEqual({ error: "Content pack not found" });
     expect(hasPurchase).not.toHaveBeenCalled();
+    expect(getPhrases).not.toHaveBeenCalled();
+  });
+
+  it("returns phrases for a purchased paid pack that is temporarily inactive", async () => {
+    const getPhrases = vi.fn().mockResolvedValue([{
+      ...validPhrase,
+      pack_id: "travel",
+    }]);
+
+    const result = await loadPhrasesForRequest("travel", {
+      getUser: vi.fn().mockResolvedValue({ id: "user-1" }),
+      getPack: vi.fn().mockResolvedValue({
+        id: "travel",
+        is_free: false,
+        is_active: false,
+      }),
+      hasPurchase: vi.fn().mockResolvedValue(true),
+      getPhrases,
+    });
+
+    expect(result.status).toBe(200);
+    expect(getPhrases).toHaveBeenCalledWith("travel");
+  });
+
+  it("returns 404 for an inactive paid pack when the user has not purchased it", async () => {
+    const getPhrases = vi.fn();
+
+    const result = await loadPhrasesForRequest("travel", {
+      getUser: vi.fn().mockResolvedValue({ id: "user-1" }),
+      getPack: vi.fn().mockResolvedValue({
+        id: "travel",
+        is_free: false,
+        is_active: false,
+      }),
+      hasPurchase: vi.fn().mockResolvedValue(false),
+      getPhrases,
+    });
+
+    expect(result.status).toBe(404);
+    expect(result.body).toEqual({ error: "Content pack not found" });
     expect(getPhrases).not.toHaveBeenCalled();
   });
 });
