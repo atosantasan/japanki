@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { RATE_LIMIT_EXCEEDED_ERROR } from "@/lib/constants/app";
 import { buildQuizQueue } from "@/lib/quiz/build-queue";
 import { prepareQuestion, type PreparedQuestion } from "@/lib/quiz/prepare-question";
 import type { ConsumeHeartResult } from "@/lib/quiz/rpc-client";
@@ -34,7 +35,7 @@ export type StartQuizResult = {
 
 export type StartQuizResponse =
   | { status: 200; body: StartQuizResult }
-  | { status: 401 | 403 | 404 | 500; body: { error: string } };
+  | { status: 401 | 403 | 404 | 429 | 500; body: { error: string } };
 
 export async function startQuizForRequest(
   input: StartQuizBody,
@@ -55,6 +56,9 @@ export async function startQuizForRequest(
     }
     if (message.includes("Content pack not found")) {
       return { status: 404, body: { error: message } };
+    }
+    if (message.includes(RATE_LIMIT_EXCEEDED_ERROR)) {
+      return { status: 429, body: { error: RATE_LIMIT_EXCEEDED_ERROR } };
     }
     console.error("Failed to create quiz session", error);
     return { status: 500, body: { error: "Unable to start quiz" } };

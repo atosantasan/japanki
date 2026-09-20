@@ -30,12 +30,14 @@ describe("client secret leakage", () => {
       expect(source).not.toMatch(/SUPABASE_SECRET_KEY/);
       expect(source).not.toMatch(/STRIPE_SECRET_KEY/);
       expect(source).not.toMatch(/STRIPE_WEBHOOK_SECRET/);
+      expect(source).not.toMatch(/CRON_SECRET/);
     }
 
     for (const file of files) {
       const source = readFileSync(file, "utf8");
       expect(source).not.toMatch(/process\.env\.NEXT_PUBLIC_SUPABASE_SECRET_KEY/);
       expect(source).not.toMatch(/process\.env\.NEXT_PUBLIC_STRIPE_SECRET_KEY/);
+      expect(source).not.toMatch(/process\.env\.NEXT_PUBLIC_CRON_SECRET/);
     }
   });
 });

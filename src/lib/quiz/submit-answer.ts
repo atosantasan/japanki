@@ -1,6 +1,11 @@
 import { z } from "zod";
+import {
+  RATE_LIMIT_EXCEEDED_ERROR,
+  SUBMIT_ANSWER_RATE_LIMIT_PER_HOUR,
+} from "@/lib/constants/app";
 import { SUPPORTED_LOCALES, type SupportedLocale } from "@/lib/i18n/locales";
 import { gradeSelectedChoice } from "@/lib/quiz/grade-answer";
+import { consumeRateLimit } from "@/lib/security/rate-limit";
 import type {
   ConsumeHeartResult,
   SubmitAnswerResult,
@@ -48,7 +53,7 @@ export type SubmitAnswerLoader = {
 
 export type SubmitAnswerResponse =
   | { status: 200; body: SubmitAnswerResult }
-  | { status: 400 | 401 | 403 | 404 | 500; body: { error: string } };
+  | { status: 400 | 401 | 403 | 404 | 429 | 500; body: { error: string } };
 
 const PhraseGradeSchema = z.object({
   choices_by_lang: ChoicesByLangSchema,
@@ -62,6 +67,14 @@ export async function submitAnswerForRequest(
   const user = await loader.getUser();
   if (!user) {
     return { status: 401, body: { error: "unauthenticated" } };
+  }
+  if (
+    !consumeRateLimit(
+      `submit-answer:${user.id}`,
+      SUBMIT_ANSWER_RATE_LIMIT_PER_HOUR,
+    )
+  ) {
+    return { status: 429, body: { error: RATE_LIMIT_EXCEEDED_ERROR } };
   }
 
   const context = await loader.loadGradeContext(

@@ -99,6 +99,26 @@ describe("startQuizForRequest", () => {
     expect(result.body).toEqual({ error: "Content pack not found" });
   });
 
+  it("returns 429 when create_quiz_session is rate limited", async () => {
+    const loadAssigned = vi.fn();
+    const result = await startQuizForRequest(
+      { packId: "survival", locale: "en" },
+      {
+        getUser: vi.fn().mockResolvedValue({ id: "user-1" }),
+        createSession: vi
+          .fn()
+          .mockRejectedValue(new Error("Rate limit exceeded")),
+        loadAssigned,
+        loadPhrases: vi.fn(),
+        getHearts: vi.fn(),
+      },
+    );
+
+    expect(result.status).toBe(429);
+    expect(result.body).toEqual({ error: "Rate limit exceeded" });
+    expect(loadAssigned).not.toHaveBeenCalled();
+  });
+
   it("returns five prepared questions without correct_choice_index", async () => {
     const loadAssigned = vi.fn().mockResolvedValue(assigned);
     const loadPhrases = vi.fn().mockResolvedValue(phrases);

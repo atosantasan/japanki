@@ -1,8 +1,13 @@
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { SUBMIT_ANSWER_RATE_LIMIT_PER_HOUR } from "@/lib/constants/app";
 import { submitAnswerForRequest } from "@/lib/quiz/submit-answer";
+import {
+  consumeRateLimit,
+  resetRateLimitStoreForTests,
+} from "@/lib/security/rate-limit";
 
 const phrase = {
   choices_by_lang: {
@@ -40,6 +45,10 @@ function ownedContext(overrides?: {
 }
 
 describe("submitAnswerForRequest", () => {
+  afterEach(() => {
+    resetRateLimitStoreForTests();
+  });
+
   it("returns 401 when the user is missing", async () => {
     const loadGradeContext = vi.fn();
     const result = await submitAnswerForRequest(
@@ -177,6 +186,52 @@ describe("submitAnswerForRequest", () => {
 
     expect(result.status).toBe(403);
     expect(consumeHeart).not.toHaveBeenCalled();
+  });
+
+  it("returns 429 after the hourly submit-answer limit is exceeded", async () => {
+    const loadGradeContext = vi.fn();
+    for (let i = 0; i < SUBMIT_ANSWER_RATE_LIMIT_PER_HOUR; i += 1) {
+      consumeRateLimit(
+        "submit-answer:user-1",
+        SUBMIT_ANSWER_RATE_LIMIT_PER_HOUR,
+      );
+    }
+
+    const result = await submitAnswerForRequest(
+      {
+        sessionId,
+        phraseId,
+        selectedChoiceText: "Yes",
+        locale: "en",
+      },
+      {
+        getUser: vi.fn().mockResolvedValue({ id: "user-1" }),
+        loadGradeContext,
+        consumeHeart: vi.fn(),
+      },
+    );
+
+    expect(result.status).toBe(429);
+    expect(result.body).toEqual({ error: "Rate limit exceeded" });
+    expect(loadGradeContext).not.toHaveBeenCalled();
+  });
+
+  it("grades normally while the caller is still inside the hourly limit", async () => {
+    const result = await submitAnswerForRequest(
+      {
+        sessionId,
+        phraseId,
+        selectedChoiceText: "Yes",
+        locale: "en",
+      },
+      {
+        getUser: vi.fn().mockResolvedValue({ id: "user-1" }),
+        loadGradeContext: vi.fn().mockResolvedValue(ownedContext()),
+        consumeHeart: vi.fn(),
+      },
+    );
+
+    expect(result.status).toBe(200);
   });
 });
 
