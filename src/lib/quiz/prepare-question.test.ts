@@ -34,24 +34,31 @@ const validPhrase: PhraseRecord = {
 const keepOrder = () => 0.99;
 
 describe("prepareQuestion", () => {
-  it("uses English choices and prompt when locale is ja", () => {
-    const result = prepareQuestion(validPhrase, "ja", "Thank you", keepOrder);
+  it("uses English choices when locale is ja and omits the answer", () => {
+    const result = prepareQuestion(validPhrase, "ja", keepOrder);
 
-    expect(result.prompt).toBe(validPhrase.translations.en);
     expect(result.choices).toEqual([...validPhrase.choices_by_lang.en]);
     expect(result.choices.every((choice) => typeof choice === "string")).toBe(
       true,
     );
-    expect(result.correctChoiceText).toBe("Thank you");
-    expect(result).not.toHaveProperty("correctIndex");
+    expect(result.phrase).toEqual({
+      id: validPhrase.id,
+      pack_id: validPhrase.pack_id,
+      romaji: validPhrase.romaji,
+      japanese: validPhrase.japanese,
+      audio_url: validPhrase.audio_url,
+    });
+    expect(result).not.toHaveProperty("correctChoiceText");
+    expect(result).not.toHaveProperty("prompt");
+    expect(result.phrase).not.toHaveProperty("translations");
+    expect(result.phrase).not.toHaveProperty("choices_by_lang");
+    expect(result.phrase).not.toHaveProperty("correct_choice_index");
   });
 
-  it("uses English choices and prompt when locale is en", () => {
-    const result = prepareQuestion(validPhrase, "en", "Thank you", keepOrder);
+  it("uses English choices when locale is en", () => {
+    const result = prepareQuestion(validPhrase, "en", keepOrder);
 
-    expect(result.prompt).toBe("Thank you");
     expect(result.choices).toEqual(["Thank you", "Sorry", "Hello"]);
-    expect(result.correctChoiceText).toBe("Thank you");
-    expect(result).not.toHaveProperty("correctIndex");
+    expect(result).not.toHaveProperty("correctChoiceText");
   });
 });

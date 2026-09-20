@@ -1,13 +1,9 @@
 import { z } from "zod";
 import { buildQuizQueue } from "@/lib/quiz/build-queue";
-import { gradeSelectedChoice } from "@/lib/quiz/grade-answer";
 import { prepareQuestion, type PreparedQuestion } from "@/lib/quiz/prepare-question";
 import type { ConsumeHeartResult } from "@/lib/quiz/rpc-client";
 import { SUPPORTED_LOCALES, type SupportedLocale } from "@/lib/i18n/locales";
-import {
-  PhraseRecordSchema,
-  PublicPhraseRecordSchema,
-} from "@/lib/validation/translation-schema";
+import { PublicPhraseRecordSchema } from "@/lib/validation/translation-schema";
 
 export const StartQuizBodySchema = z.object({
   packId: z.string().min(1),
@@ -71,35 +67,20 @@ export async function startQuizForRequest(
       loader.getHearts(user.id),
     ]);
 
-    const parsed = PhraseRecordSchema.array().safeParse(phraseRows);
+    const parsed = PublicPhraseRecordSchema.array().safeParse(phraseRows);
     if (!parsed.success) {
       console.error("Phrase payload failed Zod validation");
       return { status: 500, body: { error: "Invalid phrase data" } };
     }
 
-    const publicPhrases = parsed.data.map((phrase) =>
-      PublicPhraseRecordSchema.parse(phrase),
-    );
     const ordered = buildQuizQueue({
       packId: input.packId,
       assigned,
-      phrases: publicPhrases,
+      phrases: parsed.data,
     });
-    const byId = new Map(parsed.data.map((phrase) => [phrase.id, phrase]));
-
-    const questions = ordered.map((phrase) => {
-      const full = byId.get(phrase.id);
-      if (!full) {
-        throw new Error("Assigned phrase is missing from the pack payload");
-      }
-      const graded = gradeSelectedChoice({
-        selectedChoiceText: "",
-        choicesByLang: full.choices_by_lang,
-        correctChoiceIndex: full.correct_choice_index,
-        locale: input.locale,
-      });
-      return prepareQuestion(phrase, input.locale, graded.correctChoiceText);
-    });
+    const questions = ordered.map((phrase) =>
+      prepareQuestion(phrase, input.locale),
+    );
 
     return {
       status: 200,

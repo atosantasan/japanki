@@ -17,7 +17,9 @@ describe("QuizPlay hearts empty warning", () => {
   });
 
   it("disables answer buttons when remaining hearts are empty", () => {
-    expect(source).toMatch(/disabled=\{Boolean\(feedback\) \|\| !canPlayWithHearts\(hearts\)\}/);
+    expect(source).toMatch(
+      /disabled=\{\s*Boolean\(feedback\) \|\| submitting \|\| !canPlayWithHearts\(hearts\)\s*\}/,
+    );
     expect(source).toMatch(/!canPlayWithHearts\(hearts\)/);
   });
 
@@ -28,15 +30,19 @@ describe("QuizPlay hearts empty warning", () => {
     expect(source).toMatch(/gradeError/);
   });
 
-  it("shows local feedback before waiting for submit-answer", () => {
+  it("grades from submit-answer instead of a local correctChoiceText compare", () => {
     const choose = source.slice(
       source.indexOf("onChoose"),
       source.indexOf("goNext"),
     );
-    expect(choose).toMatch(/selectedText === current.correctChoiceText/);
-    expect(choose.indexOf("setFeedback")).toBeLessThan(
-      choose.indexOf("requestSubmitAnswer"),
+    expect(choose).toMatch(/await requestSubmitAnswer/);
+    expect(choose).toMatch(/result\.isCorrect/);
+    expect(choose).toMatch(/result\.correctChoiceText/);
+    expect(choose).not.toMatch(/current\.correctChoiceText/);
+    expect(choose).not.toMatch(/selectedText ===/);
+    expect(choose.match(/requestSubmitAnswer/g)).toHaveLength(1);
+    expect(choose.indexOf("await requestSubmitAnswer")).toBeLessThan(
+      choose.indexOf("setFeedback"),
     );
-    expect(choose).not.toMatch(/await requestSubmitAnswer/);
   });
 });

@@ -125,11 +125,19 @@ describe("startQuizForRequest", () => {
     }
     expect(result.body.sessionId).toBe("sess-1");
     expect(result.body.questions).toHaveLength(5);
-    expect(result.body.questions[0]?.correctChoiceText).toBe("Yes");
+    expect(result.body.questions[0]?.choices).toHaveLength(3);
+    expect(result.body.questions[0]).not.toHaveProperty("correctChoiceText");
+    expect(result.body.questions[0]).not.toHaveProperty("prompt");
     expect(result.body.questions[0]?.phrase).not.toHaveProperty(
       "correct_choice_index",
     );
+    expect(result.body.questions[0]?.phrase).not.toHaveProperty("translations");
+    expect(result.body.questions[0]?.phrase).not.toHaveProperty(
+      "choices_by_lang",
+    );
     expect(JSON.stringify(result.body)).not.toContain("correct_choice_index");
+    expect(JSON.stringify(result.body)).not.toContain("correctChoiceText");
+    expect(JSON.stringify(result.body)).not.toContain("correctChoiceIndex");
   });
 });
 
@@ -141,5 +149,7 @@ describe("quiz start API", () => {
     );
     expect(source).toMatch(/Promise\.all\(/);
     expect(source).toMatch(/createSession/);
+    expect(source).not.toMatch(/gradeSelectedChoice/);
+    expect(source).not.toMatch(/correctChoiceText/);
   });
 });
