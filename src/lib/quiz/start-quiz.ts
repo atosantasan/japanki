@@ -38,7 +38,7 @@ export type StartQuizResult = {
 
 export type StartQuizResponse =
   | { status: 200; body: StartQuizResult }
-  | { status: 401 | 403 | 500; body: { error: string } };
+  | { status: 401 | 403 | 404 | 500; body: { error: string } };
 
 export async function startQuizForRequest(
   input: StartQuizBody,
@@ -56,6 +56,9 @@ export async function startQuizForRequest(
     const message = error instanceof Error ? error.message : "";
     if (message.includes("Purchased pack permission required")) {
       return { status: 403, body: { error: message } };
+    }
+    if (message.includes("Content pack not found")) {
+      return { status: 404, body: { error: message } };
     }
     console.error("Failed to create quiz session", error);
     return { status: 500, body: { error: "Unable to start quiz" } };

@@ -19,7 +19,7 @@ async function createPhrasesLoader(): Promise<PhraseRequestLoader> {
     async getPack(packId) {
       const { data, error } = await adminClient
         .from("content_packs")
-        .select("id, is_free")
+        .select("id, is_free, is_active")
         .eq("id", packId)
         .maybeSingle();
       if (error) {

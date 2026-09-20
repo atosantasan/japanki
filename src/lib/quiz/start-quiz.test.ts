@@ -81,6 +81,24 @@ describe("startQuizForRequest", () => {
     expect(result.status).toBe(403);
   });
 
+  it("returns 404 when create_quiz_session does not find an active pack", async () => {
+    const result = await startQuizForRequest(
+      { packId: "retired", locale: "en" },
+      {
+        getUser: vi.fn().mockResolvedValue({ id: "user-1" }),
+        createSession: vi
+          .fn()
+          .mockRejectedValue(new Error("Content pack not found")),
+        loadAssigned: vi.fn(),
+        loadPhrases: vi.fn(),
+        getHearts: vi.fn(),
+      },
+    );
+
+    expect(result.status).toBe(404);
+    expect(result.body).toEqual({ error: "Content pack not found" });
+  });
+
   it("returns five prepared questions without correct_choice_index", async () => {
     const loadAssigned = vi.fn().mockResolvedValue(assigned);
     const loadPhrases = vi.fn().mockResolvedValue(phrases);

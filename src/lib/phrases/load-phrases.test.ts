@@ -49,7 +49,7 @@ describe("loadPhrasesForRequest", () => {
 
     const result = await loadPhrasesForRequest("travel", {
       getUser: vi.fn().mockResolvedValue({ id: "user-1" }),
-      getPack: vi.fn().mockResolvedValue({ id: "travel", is_free: false }),
+      getPack: vi.fn().mockResolvedValue({ id: "travel", is_free: false, is_active: true }),
       hasPurchase,
       getPhrases,
     });
@@ -62,7 +62,7 @@ describe("loadPhrasesForRequest", () => {
   it("returns validated phrases for an authenticated free-pack user", async () => {
     const result = await loadPhrasesForRequest("survival", {
       getUser: vi.fn().mockResolvedValue({ id: "user-1" }),
-      getPack: vi.fn().mockResolvedValue({ id: "survival", is_free: true }),
+      getPack: vi.fn().mockResolvedValue({ id: "survival", is_free: true, is_active: true }),
       hasPurchase: vi.fn(),
       getPhrases: vi.fn().mockResolvedValue([validPhrase]),
     });
@@ -87,7 +87,7 @@ describe("loadPhrasesForRequest", () => {
   it("omits correct_choice_index from the public phrase payload", async () => {
     const result = await loadPhrasesForRequest("survival", {
       getUser: vi.fn().mockResolvedValue({ id: "user-1" }),
-      getPack: vi.fn().mockResolvedValue({ id: "survival", is_free: true }),
+      getPack: vi.fn().mockResolvedValue({ id: "survival", is_free: true, is_active: true }),
       hasPurchase: vi.fn(),
       getPhrases: vi.fn().mockResolvedValue([validPhrase]),
     });
@@ -99,5 +99,26 @@ describe("loadPhrasesForRequest", () => {
     expect(result.body.phrases).toHaveLength(1);
     expect(result.body.phrases[0]).not.toHaveProperty("correct_choice_index");
     expect(JSON.stringify(result.body)).not.toContain("correct_choice_index");
+  });
+
+  it("returns 404 when the pack is inactive", async () => {
+    const hasPurchase = vi.fn();
+    const getPhrases = vi.fn();
+
+    const result = await loadPhrasesForRequest("survival", {
+      getUser: vi.fn().mockResolvedValue({ id: "user-1" }),
+      getPack: vi.fn().mockResolvedValue({
+        id: "survival",
+        is_free: true,
+        is_active: false,
+      }),
+      hasPurchase,
+      getPhrases,
+    });
+
+    expect(result.status).toBe(404);
+    expect(result.body).toEqual({ error: "Content pack not found" });
+    expect(hasPurchase).not.toHaveBeenCalled();
+    expect(getPhrases).not.toHaveBeenCalled();
   });
 });

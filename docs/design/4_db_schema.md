@@ -5,6 +5,7 @@
 > |---|---|---|
 > | v1.0 | 2026-09-19 | `supabase/migrations/001`〜`003` の as-is |
 > | v1.1 | 2026-09-20 | Issue #25: パック/フレーズ FK を ON DELETE RESTRICT に明示 (`005`) |
+> | v1.2 | 2026-09-20 | Issue #24 / #37: `price_usd` を numeric(10,2) に拡張し `is_active` を追加 (`006`) |
 
 マイグレーション適用順:
 
@@ -13,6 +14,7 @@
 3. `003_seed_packs.sql` — Survival / Travel と各 5 フレーズ
 4. `004_submit_answer_and_billing_guards.sql` — `submit_answer` RPC と購入履歴の保護
 5. `005_fk_on_delete_policy.sql` — パック/フレーズ参照 FK を ON DELETE RESTRICT に付け替え
+6. `006_content_packs_price_and_active.sql` — `price_usd` numeric(10,2) と論理削除 `is_active`
 
 ---
 
@@ -59,7 +61,8 @@ erDiagram
         jsonb title
         jsonb description
         boolean is_free
-        numeric price_usd
+        boolean is_active "DEFAULT true"
+        numeric price_usd "numeric(10,2)"
         text stripe_price_id
         timestamptz created_at
     }
@@ -133,10 +136,11 @@ erDiagram
 | `id` | text PK | `survival` / `travel` |
 | `title` / `description` | jsonb | 8 言語キー |
 | `is_free` | boolean | 無料判定 |
-| `price_usd` | numeric(4,2) | Checkout の `price_data` に使用（stripe_price_id が無い場合） |
+| `is_active` | boolean NOT NULL DEFAULT true | 論理削除フラグ。Issue #37。false でカタログ/新規プレイから除外 |
+| `price_usd` | numeric(10,2) | Checkout の `price_data` に使用（stripe_price_id が無い場合）。Issue #24 で (4,2) から拡張 |
 | `stripe_price_id` | text | 設定時は Stripe Price を優先 |
 
-SELECT は全員可。パックの物理削除は子テーブル FK が RESTRICT のため拒否される。廃止は論理削除（`is_active` 等）で検討する（未実装、別 Issue）。
+SELECT は全員可（購入履歴のタイトル表示のため非アクティブ行も読める）。パックの物理削除は子テーブル FK が RESTRICT のため拒否される。廃止は `is_active = false` の論理削除（Issue #25 の TODO を #37 / `006` で解消）。
 
 ### 3-3. `phrases`
 
@@ -183,7 +187,7 @@ UNIQUE (`user_id`, `pack_id`) が Webhook 再送の冪等キー。SELECT は本�
 
 ### 3-8. FK ON DELETE 方針（Issue #25）
 
-`001_init.sql` ではパック/フレーズ参照が `ON DELETE CASCADE` だった。`005_fk_on_delete_policy.sql` で以下を `RESTRICT` に付け替える。パック廃止は物理 DELETE せず、別 Issue で `is_active` 等の論理削除を検討する。
+`001_init.sql` ではパック/フレーズ参照が `ON DELETE CASCADE` だった。`005_fk_on_delete_policy.sql` で以下を `RESTRICT` に付け替える。パック廃止は物理 DELETE せず、`006` の `content_packs.is_active`（Issue #37）で論理削除する。
 
 | FK | 参照先 | ON DELETE | 理由 |
 |---|---|---|---|
@@ -220,7 +224,7 @@ UNIQUE (`user_id`, `pack_id`) が Webhook 再送の冪等キー。SELECT は本�
 戻り: `session_id uuid`
 
 1. 未認証 → `Not authenticated`
-2. パックなし → `Content pack not found`
+2. パックなし、または `is_active = false` → `Content pack not found`
 3. 有料かつ未購入 → `Purchased pack permission required`
 4. セッション INSERT
 5. `order by random() limit 5` で questions INSERT
@@ -262,8 +266,8 @@ UNIQUE (`user_id`, `pack_id`) が Webhook 再送の冪等キー。SELECT は本�
 
 | テーブル | SELECT |
 |---|---|
-| `content_packs` | 全員 |
-| `phrases` | `is_free = true` のパックのみ |
+| `content_packs` | 全員（非アクティブ含む。購入履歴表示のため） |
+| `phrases` | `is_free = true AND is_active = true` のパックのみ |
 | `profiles` | `auth.uid() = id` |
 | `quiz_sessions` | `auth.uid() = user_id` |
 | `quiz_session_questions` | 自分のセッション経由 |
