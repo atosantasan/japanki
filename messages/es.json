@@ -47,6 +47,7 @@
     "complete": "¡1 minuto completado!",
     "home": "Volver al inicio",
     "paidLocked": "Este pack requiere compra.",
+    "paidLockedHint": "Si acabas de pagar, espera un momento y recarga esta página.",
     "startError": "No se pudo iniciar este pack.",
     "gradeError": "No se pudo calificar esta respuesta. Inténtalo de nuevo.",
     "heartsEmpty": "Sin corazones. Se recargan con el tiempo.",
@@ -62,7 +63,11 @@
     "title": "Pago recibido",
     "body": "Stripe está confirmando la compra. El pack de viaje se desbloquea tras verificar el webhook: esta página no concede el acceso.",
     "cta": "Abrir pack de viaje",
-    "accountCta": "Ver compras"
+    "accountCta": "Ver compras",
+    "confirming": "Confirmando el pago…",
+    "timeout": "El desbloqueo está tardando más de lo previsto. Inténtalo de nuevo en un momento o revisa tus compras.",
+    "retry": "Volver a comprobar",
+    "contact": "Contacto: {email}"
   },
   "Account": {
     "title": "Compras",

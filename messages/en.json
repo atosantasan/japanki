@@ -47,6 +47,7 @@
     "complete": "1-minute complete!",
     "home": "Back home",
     "paidLocked": "Purchase required for this pack.",
+    "paidLockedHint": "If you just paid, wait a moment and reload this page.",
     "startError": "Could not start this pack.",
     "gradeError": "Could not grade this answer. Please try again.",
     "heartsEmpty": "No hearts left. They refill over time.",
@@ -62,7 +63,11 @@
     "title": "Payment received",
     "body": "Stripe is confirming your purchase. The travel pack unlocks after the webhook is verified — this page does not grant access by itself.",
     "cta": "Open travel pack",
-    "accountCta": "View purchases"
+    "accountCta": "View purchases",
+    "confirming": "Confirming your payment\u2026",
+    "timeout": "Unlocking is taking a little longer. Try again shortly, or check your purchases.",
+    "retry": "Check again",
+    "contact": "Contact {email}"
   },
   "Account": {
     "title": "Purchases",

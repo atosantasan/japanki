@@ -5,6 +5,7 @@
 > |---|---|---|
 > | v1.0 | 2026-09-19 | 現行ルート・認証・クイズ・Stripe フロー |
 | v1.1 | 2026-09-20 | Issue #18: 保留 Checkout に TTL と確認ステップを追加 |
+| v1.2 | 2026-09-21 | Issue #19: Success ページが purchase-status をポーリングしてから CTA を有効化 |
 
 ---
 
@@ -62,7 +63,7 @@ graph TD
 |---|---|
 | `/{locale}` | ホーム。無料開始・有料導線・購入/所有 CTA |
 | `/{locale}/quiz/[packId]` | クイズ。`packId` は `survival` / `travel` |
-| `/{locale}/success` | 決済完了案内。権限は付与しない |
+| `/{locale}/success` | 決済完了案内。purchase-status をポーリングしてから CTA を有効化。権限は付与しない |
 | `/{locale}/account` | 所有パックと Portal |
 | `/{locale}/terms` `/privacy` `/legal` | 法務 |
 | `/auth/callback` | ロケール外。OAuth/OTP コールバック |
@@ -248,6 +249,8 @@ sequenceDiagram
     autonumber
     actor User as ユーザー
     participant UI as PurchaseButton / AuthProvider
+    participant Success as /success
+    participant Status as GET /api/billing/purchase-status
     participant API as POST /api/checkout
     participant Stripe as Stripe
     participant WH as /api/stripe-webhook
@@ -269,12 +272,25 @@ sequenceDiagram
         API-->>UI: { url }
         UI-->>User: Checkout へ
         User->>Stripe: 支払い
-        Stripe-->>User: /{locale}/success（案内のみ。未着なら未購入のまま）
+        Stripe-->>User: /{locale}/success?pack=
         Stripe->>WH: checkout.session.completed
         WH->>WH: constructEvent 署名検証
         WH->>Admin: grantPurchase INSERT
         alt unique 衝突
             Admin-->>WH: duplicate（冪等成功）
+        end
+        loop 最大約20秒 / 1.5秒間隔
+            Success->>Status: pack_id
+            Status->>Admin: SELECT user_purchases（RLS・本人行のみ）
+            alt 未着
+                Admin-->>Status: purchased=false
+            else 着済
+                Admin-->>Status: purchased=true
+                Success-->>User: CTA 有効化（Open travel pack）
+            end
+        end
+        opt タイムアウト
+            Success-->>User: 再確認 / 問い合わせ案内。CTA は無効のまま
         end
         Note over User,Admin: Success ページは INSERT しない
     end

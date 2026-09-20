@@ -114,7 +114,7 @@
 
 - **F-5-1: 匿名購入禁止**: `is_anonymous` または Google/Email 未連携なら Checkout 403（`identity_linking_required`）→ 連携モーダル。
 - **F-5-2: 二重購入防止**: 所有済みなら Checkout 400（「既に購入済みのパックです」）。UI は「学習を始める」に切替。
-- **F-5-3: Webhook のみ付与**: Success ページは権限を書かない。`checkout.session.completed` の署名検証後に `user_purchases` INSERT。UNIQUE で冪等。Webhook 遅延中に Travel クイズへ進むと `paidLocked` / RPC 例外になり得る。再読み込みまたは `/account` で所有確認する。
+- **F-5-3: Webhook のみ付与**: Success ページは権限を書かない。`checkout.session.completed` の署名検証後に `user_purchases` INSERT。UNIQUE で冪等。Success ページは `GET /api/billing/purchase-status` をポーリングして反映を確認し、確認できてから CTA を有効化する。タイムアウト時は再確認と問い合わせ導線を出す。
 - **F-5-4: Customer Portal**: 連携済みユーザーが Stripe 上で領収・支払方法を管理できる。
 - **F-5-5: 保留チェックアウト**: 連携前の pack ID を `{ packId, storedAt }` として query / sessionStorage / localStorage に保持する（TTL 10分）。連携完了後は確認ステップを挟み、続ける場合のみ Checkout へ進む。期限切れ・キャンセル・消費後はストレージを削除する。
 

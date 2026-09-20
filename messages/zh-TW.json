@@ -47,6 +47,7 @@
     "complete": "一分鐘學習完成！",
     "home": "回首頁",
     "paidLocked": "此教材包需要購買。",
+    "paidLockedHint": "若剛完成付款，請稍候再重新整理此頁面。",
     "startError": "無法開始這個教材包。",
     "gradeError": "無法判定這題，請再試一次。",
     "heartsEmpty": "愛心用完了，會隨時間回復。",
@@ -62,7 +63,11 @@
     "title": "已收到付款",
     "body": "Stripe 正在確認購買。旅行包會在 Webhook 驗證後解鎖——這個頁面本身不會授予權限。",
     "cta": "打開旅行包",
-    "accountCta": "查看購買紀錄"
+    "accountCta": "查看購買紀錄",
+    "confirming": "正在確認付款…",
+    "timeout": "解鎖時間比預期更久。請稍後再試，或到購買紀錄確認。",
+    "retry": "再確認",
+    "contact": "聯絡我們：{email}"
   },
   "Account": {
     "title": "購買紀錄",
