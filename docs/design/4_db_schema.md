@@ -9,6 +9,7 @@
 > | v1.3 | 2026-09-20 | Issue #42: `is_active=false` を一時非表示に変更（既存購入者は継続プレイ可、`008`） |
 > | v1.4 | 2026-09-21 | Issue #17: `create_quiz_session` を同一 user 20回/時に制限（`009`） |
 > | v1.5 | 2026-09-21 | Issue #17 follow-up: `submit_answer` を `submit_answer_calls` COUNT で 60回/時に制限（`010`） |
+> | v1.6 | 2026-09-21 | Issue #15: `quiz_answers` と割当数一致時の `completed_at` 更新（`011`） |
 
 マイグレーション適用順:
 
@@ -22,6 +23,7 @@
 8. `008_inactive_pack_purchased_play.sql` — `is_active=false` でも購入済みは `create_quiz_session` 可（Issue #42）
 9. `009_quiz_start_rate_limit.sql` — `quiz_sessions(user_id, created_at)` インデックスと `create_quiz_session` の 20回/時制限（Issue #17）
 10. `010_submit_answer_rate_limit.sql` — `submit_answer_calls` と `submit_answer` の 60回/時制限（Issue #17 follow-up）
+11. `011_quiz_session_completion.sql` — `quiz_answers` と割当数一致時の `completed_at` 更新（Issue #15）
 
 ---
 
@@ -51,8 +53,10 @@ erDiagram
     profiles ||--o{ submit_answer_calls : "1対多"
     quiz_sessions ||--o{ quiz_session_questions : "ちょうど5"
     quiz_sessions ||--o{ quiz_attempts : "誤答1回目"
+    quiz_sessions ||--o{ quiz_answers : "正誤ログ"
     phrases ||--o{ quiz_session_questions : "割当"
     phrases ||--o{ quiz_attempts : "誤答"
+    phrases ||--o{ quiz_answers : "正誤"
 
     profiles {
         uuid id PK
@@ -91,7 +95,7 @@ erDiagram
         uuid id PK
         uuid user_id FK "ON DELETE CASCADE"
         text pack_id FK "ON DELETE RESTRICT"
-        timestamptz completed_at "未使用"
+        timestamptz completed_at "割当数一致時"
         timestamptz created_at
     }
 
@@ -120,6 +124,14 @@ erDiagram
         uuid id PK
         uuid user_id FK "ON DELETE CASCADE"
         timestamptz called_at
+    }
+
+    quiz_answers {
+        uuid id PK
+        uuid session_id FK "ON DELETE CASCADE"
+        uuid phrase_id FK "ON DELETE RESTRICT"
+        boolean is_correct
+        timestamptz answered_at
     }
 ```
 
@@ -175,7 +187,7 @@ Zod（`PhraseRecordSchema`）は教材検証用に 8 言語キーと 3 択タプ
 
 ### 3-4. `quiz_sessions`
 
-ユーザーとパックに紐づく 1 プレイ。`completed_at` は現行 UI から更新されない。`user_id` は profiles ON DELETE CASCADE、`pack_id` は content_packs ON DELETE RESTRICT。
+ユーザーとパックに紐づく 1 プレイ。`completed_at` は `submit_answer` が `quiz_answers` 件数と `quiz_session_questions` 件数を比較し、割当すべてに解答済みかつ `completed_at` が null のときだけ now() を書く（Issue #15 / `011`）。出題数の 5 は決め打ちしない。`user_id` は profiles ON DELETE CASCADE、`pack_id` は content_packs ON DELETE RESTRICT。
 
 ### 3-5. `quiz_session_questions`
 
@@ -209,7 +221,23 @@ UNIQUE (`user_id`, `pack_id`) が Webhook 再送の冪等キー。SELECT は本�
 | `user_id` | uuid | FK → profiles ON DELETE CASCADE | 呼び出しユーザー |
 | `called_at` | timestamptz | default now() | 呼び出し時刻 |
 
-### 3-9. FK ON DELETE 方針（Issue #25）
+### 3-9. `quiz_answers`
+
+正誤ログ（分析用）。`quiz_attempts` は初回誤答・ハート減算の重複防止専用のまま。同一 (`session_id`, `phrase_id`) は 1 行。`Invalid choice` など判定前例外では INSERT しない。SELECT ポリシーなし。`session_id` は quiz_sessions ON DELETE CASCADE、`phrase_id` は phrases ON DELETE RESTRICT。分析用ビューは作らない（ダッシュボード未実装。集計は `quiz_answers` + `quiz_sessions` から後で組める）。
+
+| カラム | 型 | 制約 | 説明 |
+|---|---|---|
+| `id` | uuid | PK | |
+| `session_id` | uuid | FK → quiz_sessions ON DELETE CASCADE | |
+| `phrase_id` | uuid | FK → phrases ON DELETE RESTRICT | |
+| `is_correct` | boolean | not null | その問題の正誤 |
+| `answered_at` | timestamptz | default now() | 初回記録時刻 |
+
+| 制約 | 意味 |
+|---|---|
+| UNIQUE (`session_id`, `phrase_id`) `quiz_answers_session_id_phrase_id_key` | 再提出は `ON CONFLICT DO NOTHING` |
+
+### 3-10. FK ON DELETE 方針（Issue #25）
 
 `001_init.sql` ではパック/フレーズ参照が `ON DELETE CASCADE` だった。`005_fk_on_delete_policy.sql` で以下を `RESTRICT` に付け替える。パックのカタログ非表示は物理 DELETE せず、`content_packs.is_active`（Issue #37 / #42）で一時非表示にする。既存購入者のプレイは `008` で継続できる。
 
@@ -220,6 +248,7 @@ UNIQUE (`user_id`, `pack_id`) が Webhook 再送の冪等キー。SELECT は本�
 | `user_purchases.pack_id` | `content_packs.id` | RESTRICT | 購入履歴をパック削除から守る |
 | `quiz_session_questions.phrase_id` | `phrases.id` | RESTRICT | 出題割当履歴を保持する |
 | `quiz_attempts.phrase_id` | `phrases.id` | RESTRICT | ハート減算履歴を保持する |
+| `quiz_answers.phrase_id` | `phrases.id` | RESTRICT | 正誤ログをフレーズ削除から守る |
 | `profiles.id` | `auth.users.id` | CASCADE | 既存。Auth 削除に追随 |
 | `*.user_id` / `*.session_id` | profiles / quiz_sessions | CASCADE | ユーザーまたはセッション削除時の子行掃除 |
 
@@ -235,6 +264,7 @@ UNIQUE (`user_id`, `pack_id`) が Webhook 再送の冪等キー。SELECT は本�
 - `idx_quiz_attempts_session_id` / `idx_quiz_attempts_phrase_id`
 - `idx_user_purchases_user_id` / `idx_user_purchases_pack_id`
 - `idx_submit_answer_calls_user_id_called_at`（010、時間窓の COUNT 用）
+- `idx_quiz_answers_session_id`（011）
 
 複合 UNIQUE は制約側でインデックス済み。
 
@@ -272,9 +302,10 @@ UNIQUE (`user_id`, `pack_id`) が Webhook 再送の冪等キー。SELECT は本�
 1. 未認証 / 他人セッション / 未割当 phrase は例外
 2. 直近1時間の同一 `user_id` の `submit_answer_calls` が 60 件以上 → `Rate limit exceeded`（`SUBMIT_ANSWER_RATE_LIMIT_PER_HOUR`。`create_quiz_session` と同じ例外文言）
 3. `choices_by_lang[locale][correct_choice_index]` と選択テキストを比較（`ja` は `en`）
-4. 誤答時のみ内部で `consume_heart` を実行
-5. 正誤・ハート減算の成否に関わらず `submit_answer_calls` へ 1 行 INSERT
-6. 正答・誤答とも `correct_choice_text` を返す（判定後のみ）。`POST /api/quiz/start` と `GET /api/phrases` は正解テキストも `correct_choice_index` も含めない。BFF がこの例外を HTTP 429 に写像する
+4. 誤答時のみ内部で `consume_heart` を実行（`quiz_attempts` の ON CONFLICT は変更しない）
+5. 有効な選択肢の判定後、`quiz_answers` へ INSERT ON CONFLICT DO NOTHING。行数が `quiz_session_questions` 件数と一致し `completed_at` が null なら now() を書く。`Invalid choice` では記録しない
+6. 正誤に関わらず `submit_answer_calls` へ 1 行 INSERT
+7. 正答・誤答とも `correct_choice_text` を返す。BFF は `Rate limit exceeded` を 429、`Invalid choice` を 409 `invalid_choice` に写像する
 
 ### 5-4. `sync_profile(p_preferred_language text default null)`
 
@@ -301,6 +332,7 @@ UNIQUE (`user_id`, `pack_id`) が Webhook 再送の冪等キー。SELECT は本�
 | `quiz_session_questions` | 自分のセッション経由 |
 | `user_purchases` | `auth.uid() = user_id` |
 | `quiz_attempts` | ポリシーなし（読めない） |
+| `quiz_answers` | ポリシーなし（読めない）。authenticated からも REVOKE |
 | `submit_answer_calls` | ポリシーなし（読めない）。authenticated からも REVOKE |
 
 ---
