@@ -83,7 +83,7 @@
 - **F-1-1: サーバー確定の 5 問**: クライアントは `create_quiz_session(pack_id)` を呼び、サーバーがパック内から重複なしランダム 5 問を `quiz_session_questions` に確定する（AC-QUIZ-01〜03）。
 - **F-1-2: 不足パックの拒否**: パック内フレーズが 5 未満ならセッションを作らず例外でロールバックする（AC-QUIZ-06）。
 - **F-1-3: 有料パック権限**: 有料パックは `user_purchases` に本人レコードがなければ RPC が例外を返す（AC-QUIZ-07）。
-- **F-1-4: 表示時シャッフルとサーバー採点**: 3 択は表示時にシャッフルする（`shuffleChoiceOrder`）。正誤判定はクライアントのインデックス比較ではなく、選択テキストを `submit_answer` RPC に送りサーバー側で行う。`/api/phrases` は `correct_choice_index` を返さない。
+- **F-1-4: 表示時シャッフルとサーバー採点**: 3 択は表示時にシャッフルする（`shuffleChoiceOrder`）。正誤判定はクライアント比較ではなく、選択テキストを `POST /api/quiz/submit-answer`（または `submit_answer` RPC）に送りサーバー側で行う。`POST /api/quiz/start` と `GET /api/phrases` は `correct_choice_index` / `correctChoiceText` を返さない。
 - **F-1-5: 完了演出**: 5 問終了後に「1-minute complete!」相当の完了画面を出す。DB の `quiz_sessions.completed_at` 更新は現行未実装。
 
 ### ② ハートモジュール

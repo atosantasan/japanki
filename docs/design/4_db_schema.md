@@ -247,7 +247,7 @@ UNIQUE (`user_id`, `pack_id`) が Webhook 再送の冪等キー。SELECT は本�
 1. 未認証 / 他人セッション / 未割当 phrase は例外
 2. `choices_by_lang[locale][correct_choice_index]` と選択テキストを比較（`ja` は `en`）
 3. 誤答時のみ内部で `consume_heart` を実行
-4. 正答後にのみ正解テキストを返却（出題時の `/api/phrases` には `correct_choice_index` を含めない）
+4. 正答・誤答とも `correct_choice_text` を返す（判定後のみ）。`POST /api/quiz/start` と `GET /api/phrases` は正解テキストも `correct_choice_index` も含めない
 
 ### 5-4. `sync_profile(p_preferred_language text default null)`
 

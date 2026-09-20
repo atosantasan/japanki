@@ -42,6 +42,7 @@ export function QuizPlay({ packId }: QuizPlayProps) {
   const [needsManualPlay, setNeedsManualPlay] = useState(false);
   const [usedFallback, setUsedFallback] = useState(false);
   const [trackedAudioId, setTrackedAudioId] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const submittingRef = useRef(false);
 
@@ -158,29 +159,33 @@ export function QuizPlay({ packId }: QuizPlayProps) {
         return;
       }
       submittingRef.current = true;
-      const isCorrect = selectedText === current.correctChoiceText;
+      setSubmitting(true);
       setSubmitError(false);
-      setFeedback(isCorrect ? "correct" : "incorrect");
-      setRevealedCorrectText(current.correctChoiceText);
-      void requestSubmitAnswer({
-        sessionId,
-        phraseId: current.phrase.id,
-        selectedChoiceText: selectedText,
-        locale,
-      })
-        .then((result) => {
+      void (async () => {
+        try {
+          const result = await requestSubmitAnswer({
+            sessionId,
+            phraseId: current.phrase.id,
+            selectedChoiceText: selectedText,
+            locale,
+          });
+          setFeedback(result.isCorrect ? "correct" : "incorrect");
+          setRevealedCorrectText(result.correctChoiceText);
           setHearts(result.remainingHearts);
           updateHearts(result.remainingHearts, result.updatedAt);
-        })
-        .catch(() => {
+        } catch {
           setSubmitError(true);
-        });
+          submittingRef.current = false;
+          setSubmitting(false);
+        }
+      })();
     },
     [current, feedback, hearts, locale, sessionId, updateHearts],
   );
 
   const goNext = useCallback(() => {
     submittingRef.current = false;
+    setSubmitting(false);
     setFeedback(null);
     setRevealedCorrectText(null);
     setIndex((value) => value + 1);
@@ -265,12 +270,16 @@ export function QuizPlay({ packId }: QuizPlayProps) {
                 <button
                   key={choice}
                   type="button"
-                  disabled={Boolean(feedback) || !canPlayWithHearts(hearts)}
+                  disabled={
+                    Boolean(feedback) || submitting || !canPlayWithHearts(hearts)
+                  }
                   onClick={() => void onChoose(choiceIndex)}
                   className={`rounded-2xl border px-5 py-4 text-left text-lg transition ${
                     selected
                       ? "border-sun bg-sun/20 text-cream"
-                      : "border-cream/15 bg-cream/5 text-cream hover:border-cream/40"
+                      : submitting && !feedback
+                        ? "border-cream/10 bg-cream/5 text-cream/45"
+                        : "border-cream/15 bg-cream/5 text-cream hover:border-cream/40"
                   }`}
                 >
                   {choice}

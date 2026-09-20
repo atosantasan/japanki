@@ -62,7 +62,7 @@ async function createStartQuizLoader(
       const { data, error } = await adminClient
         .from("phrases")
         .select(
-          "id, pack_id, romaji, japanese, audio_url, translations, choices_by_lang, correct_choice_index",
+          "id, pack_id, romaji, japanese, audio_url, translations, choices_by_lang",
         )
         .eq("pack_id", packId)
         .order("sort_order", { ascending: true });
