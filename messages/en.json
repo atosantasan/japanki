@@ -31,7 +31,11 @@
     "checkoutGuard": "Link an account to buy this pack",
     "checkoutRedirecting": "Redirecting to checkout…",
     "checkoutError": "Could not start checkout. Please try again.",
-    "alreadyPurchased": "You already own this pack."
+    "alreadyPurchased": "You already own this pack.",
+    "checkoutConfirmTitle": "Account linked",
+    "checkoutConfirmBody": "Linking is complete. Continue to purchase \u201c{pack}\u201d?",
+    "checkoutConfirmContinue": "Continue",
+    "checkoutConfirmCancel": "Cancel"
   },
   "Quiz": {
     "loading": "Preparing five questions…",

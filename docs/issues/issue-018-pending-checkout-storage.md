@@ -11,5 +11,5 @@ pending pack を localStorage にも保持するため、共有 PC で別ユー�
 2. 自動遷移前の再確認を検討する。
 
 ## 3. 受入条件（Acceptance Criteria）
-- [ ] 別ユーザーで前の pending pack が自動 Checkout されないこと。
-- [ ] pending は使用後に消えること。
+- [x] 別ユーザーで前の pending pack が自動 Checkout されないこと。
+- [x] pending は使用後に消えること。

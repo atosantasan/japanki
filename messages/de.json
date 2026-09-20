@@ -31,7 +31,11 @@
     "checkoutGuard": "Verknüpfe ein Konto, um dieses Paket zu kaufen",
     "checkoutRedirecting": "Weiterleitung zur Kasse…",
     "checkoutError": "Bezahlvorgang konnte nicht gestartet werden. Bitte versuche es erneut.",
-    "alreadyPurchased": "Du besitzt dieses Paket bereits."
+    "alreadyPurchased": "Du besitzt dieses Paket bereits.",
+    "checkoutConfirmTitle": "Konto verknüpft",
+    "checkoutConfirmBody": "Die Verknüpfung ist abgeschlossen. Mit dem Kauf von „{pack}“ fortfahren?",
+    "checkoutConfirmContinue": "Weiter",
+    "checkoutConfirmCancel": "Abbrechen"
   },
   "Quiz": {
     "loading": "Fünf Fragen werden vorbereitet…",

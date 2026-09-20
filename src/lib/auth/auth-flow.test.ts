@@ -23,13 +23,15 @@ describe("auth and checkout flow stability", () => {
     expect(source).toMatch(/syncProfileSafely/);
   });
 
-  it("supports automatic checkout redirect after identity linking", () => {
+  it("supports checkout resume after identity linking with a confirm step", () => {
     const source = readFileSync(
       join(srcDir, "components/auth/AuthProvider.tsx"),
       "utf8",
     );
     expect(source).toMatch(/getPendingCheckoutPack/);
     expect(source).toMatch(/clearPendingCheckoutPack/);
+    expect(source).toMatch(/setCheckoutConfirmPackId/);
+    expect(source).toMatch(/confirmPendingCheckout/);
     expect(source).toMatch(/\/api\/checkout/);
   });
 

@@ -27,7 +27,7 @@
 |---|---|---|
 | **Supabase PostgreSQL** | クラウド DB | ユーザー、教材、クイズセッション、購入。正本 |
 | **ブラウザ Cookie** | Supabase SSR | Auth セッション |
-| **sessionStorage / localStorage** | `japanki_pending_checkout_pack` | 連携前の購入パック ID 一時保持 |
+| **sessionStorage / localStorage** | `japanki_pending_checkout_pack` | 連携前の購入パック（JSON + TTL 10分） |
 | **Cookie** | `japanki_auth_next` | OAuth 復帰先パス（10分、相対パスのみ） |
 
 学習進捗のローカル DB は持たない。未設定環境では匿名サインインをスキップし、クイズは `notConfigured` を出す。
@@ -293,7 +293,7 @@ Travel（有料 USD 2.99）: いくらですか / 駅はどこですか / おい
 
 | キー | 場所 | 用途 |
 |---|---|---|
-| `japanki_pending_checkout_pack` | sessionStorage + localStorage | 連携完了後の Checkout 再開 |
+| `japanki_pending_checkout_pack` | sessionStorage + localStorage（JSON `{packId, storedAt}`、TTL 10分） | 連携後の購入確認。Issue #18 |
 | `japanki_auth_next` | Cookie（Max-Age 600, SameSite=Lax） | OAuth 復帰パス。`safeNextPath` で `/` 始まりかつ `//` 禁止 |
 | URL `?checkout=` / `?checkout_pack=` | Query | 復帰時のパック指定 |
 | URL `?authError=` | Query | 認証エラー表示 |

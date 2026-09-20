@@ -85,17 +85,29 @@ describe("OAuth session sync & Stripe automatic redirect (Issue #6)", () => {
       });
     });
 
-    it("persists pending checkout pack to both sessionStorage and localStorage", () => {
-      setPendingCheckoutPack("travel");
-      expect(sessionMap.get("japanki_pending_checkout_pack")).toBe("travel");
-      expect(localMap.get("japanki_pending_checkout_pack")).toBe("travel");
+    it("persists pending checkout pack JSON to both sessionStorage and localStorage", () => {
+      const now = Date.parse("2026-09-20T08:00:00.000Z");
+      setPendingCheckoutPack("travel", now);
+      const expected = JSON.stringify({
+        packId: "travel",
+        storedAt: "2026-09-20T08:00:00.000Z",
+      });
+      expect(sessionMap.get("japanki_pending_checkout_pack")).toBe(expected);
+      expect(localMap.get("japanki_pending_checkout_pack")).toBe(expected);
     });
 
     it("recovers pending pack from localStorage if sessionStorage was wiped during OAuth navigation", () => {
-      localMap.set("japanki_pending_checkout_pack", "travel");
+      const now = Date.parse("2026-09-20T08:00:00.000Z");
+      localMap.set(
+        "japanki_pending_checkout_pack",
+        JSON.stringify({
+          packId: "travel",
+          storedAt: "2026-09-20T08:00:00.000Z",
+        }),
+      );
       sessionMap.clear();
 
-      expect(getPendingCheckoutPack()).toBe("travel");
+      expect(getPendingCheckoutPack(null, now)).toBe("travel");
     });
 
     it("clears pending pack from both storages upon checkout", () => {

@@ -4,6 +4,7 @@
 > | バージョン | 日付 | 変更内容 |
 > |---|---|---|
 > | v1.0 | 2026-09-19 | 現行ルート・認証・クイズ・Stripe フロー |
+| v1.1 | 2026-09-20 | Issue #18: 保留 Checkout に TTL と確認ステップを追加 |
 
 ---
 
@@ -24,7 +25,9 @@ graph TD
     CheckoutGuard -->|"はい"| StripeCO["Stripe Checkout 外部"]
     LinkModal -->|"Google / Email"| AuthCB["/auth/callback"]
     AuthCB --> Home
-    Home -->|"pendingCheckout あり"| StripeCO
+    Home -->|"pendingCheckout あり"| ConfirmCO["購入確認"]
+    ConfirmCO -->|"続ける"| StripeCO
+    ConfirmCO -->|"キャンセル"| Home
 
     StripeCO -->|"決済完了"| Success["/success"]
     Success -->|"Open travel pack"| QuizPaid
@@ -48,6 +51,7 @@ graph TD
     style Home fill:#b3e5fc
     style Play fill:#c8e6c9
     style LinkModal fill:#fff9c4
+    style ConfirmCO fill:#fff9c4
     style StripeCO fill:#e8f5e9
     style Locked fill:#ffcdd2
 ```
@@ -276,7 +280,7 @@ sequenceDiagram
     end
 ```
 
-連携後の自動 Checkout は `pendingCheckoutPackId`（URL `?checkout=` または `japanki_pending_checkout_pack`）を `AuthProvider` が見つけ、非匿名かつ未所有なら `triggerCheckout` する。
+保留チェックアウトは `{ packId, storedAt }` を `sessionStorage` / `localStorage` の `japanki_pending_checkout_pack` に保存する（TTL 10分、`japanki_auth_next` と同じ）。OAuth 復帰用に URL `?checkout=` も使う。連携完了後、`AuthProvider` は即 `triggerCheckout` せず確認 UI を出す。続けると Checkout、キャンセル / TTL 切れ / 消費後はストレージを削除し再発火しない。
 
 ---
 

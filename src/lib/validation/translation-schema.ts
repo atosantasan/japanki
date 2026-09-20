@@ -88,6 +88,10 @@ export const AppMessagesSchema = z.object({
     checkoutRedirecting: requiredText,
     checkoutError: requiredText,
     alreadyPurchased: requiredText,
+    checkoutConfirmTitle: requiredText,
+    checkoutConfirmBody: requiredText,
+    checkoutConfirmContinue: requiredText,
+    checkoutConfirmCancel: requiredText,
   }),
   Quiz: z.object({
     loading: requiredText,

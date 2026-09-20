@@ -31,7 +31,11 @@
     "checkoutGuard": "このパックを購入するにはアカウントを連携してください",
     "checkoutRedirecting": "決済画面へ移動しています…",
     "checkoutError": "決済を開始できませんでした。もう一度お試しください。",
-    "alreadyPurchased": "既に購入済みのパックです"
+    "alreadyPurchased": "既に購入済みのパックです",
+    "checkoutConfirmTitle": "連携が完了しました",
+    "checkoutConfirmBody": "連携が完了しました。選択していた「{pack}」の購入手続きに進みますか？",
+    "checkoutConfirmContinue": "続ける",
+    "checkoutConfirmCancel": "キャンセル"
   },
   "Quiz": {
     "loading": "5問を準備しています…",

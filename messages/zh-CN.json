@@ -31,7 +31,11 @@
     "checkoutGuard": "请先关联账号才能购买此教材包",
     "checkoutRedirecting": "正在跳转至结算页面…",
     "checkoutError": "无法启动结算，请重试。",
-    "alreadyPurchased": "您已购买此内容包"
+    "alreadyPurchased": "您已购买此内容包",
+    "checkoutConfirmTitle": "账号已关联",
+    "checkoutConfirmBody": "关联完成。要继续购买“{pack}”吗？",
+    "checkoutConfirmContinue": "继续",
+    "checkoutConfirmCancel": "取消"
   },
   "Quiz": {
     "loading": "正在准备五题…",

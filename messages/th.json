@@ -31,7 +31,11 @@
     "checkoutGuard": "เชื่อมบัญชีก่อนจึงจะซื้อแพ็กนี้ได้",
     "checkoutRedirecting": "กำลังนำคุณไปยังหน้าชำระเงิน…",
     "checkoutError": "ไม่สามารถเริ่มการชำระเงินได้ โปรดลองอีกครั้ง",
-    "alreadyPurchased": "คุณซื้อแพ็กนี้แล้ว"
+    "alreadyPurchased": "คุณซื้อแพ็กนี้แล้ว",
+    "checkoutConfirmTitle": "เชื่อมโยงบัญชีแล้ว",
+    "checkoutConfirmBody": "เชื่อมโยงบัญชีแล้ว ต้องการซื้อ “{pack}” ต่อไหม?",
+    "checkoutConfirmContinue": "ดำเนินการ",
+    "checkoutConfirmCancel": "ยกเลิก"
   },
   "Quiz": {
     "loading": "กำลังเตรียมห้าข้อ…",
