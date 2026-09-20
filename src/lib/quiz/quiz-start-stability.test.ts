@@ -20,12 +20,23 @@ describe("quiz start stability", () => {
       "utf8",
     );
     expect(source).toMatch(
-      /}, \[authLoading, locale, packId, updateHearts\]\);/,
+      /}, \[authLoading, locale, packId, updateHearts, refreshProfile\]\);/,
     );
-    expect(source).not.toMatch(/refreshProfile/);
     expect(source).toMatch(/requestStartQuiz/);
     expect(source).not.toMatch(/createQuizSession/);
     expect(source).not.toMatch(/\/api\/phrases/);
+  });
 
+  it("refetches owned packs once before locking a paid quiz", () => {
+    const source = readFileSync(
+      join(srcDir, "components/quiz/QuizPlay.tsx"),
+      "utf8",
+    );
+    expect(source).toMatch(/await refreshProfile\(\)/);
+    expect(source).toMatch(/paidLockedHint/);
+    const start = source.indexOf("Purchased pack permission required");
+    const snippet = source.slice(Math.max(0, start - 200), start + 500);
+    expect(snippet).toMatch(/refreshProfile/);
+    expect(snippet).toMatch(/requestStartQuiz/);
   });
 });

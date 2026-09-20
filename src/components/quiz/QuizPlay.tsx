@@ -25,7 +25,13 @@ type Feedback = "correct" | "incorrect" | null;
 export function QuizPlay({ packId }: QuizPlayProps) {
   const t = useTranslations("Quiz");
   const locale = useLocale() as SupportedLocale;
-  const { configured, profile, loading: authLoading, updateHearts } = useAuth();
+  const {
+    configured,
+    profile,
+    loading: authLoading,
+    updateHearts,
+    refreshProfile,
+  } = useAuth();
   const [loading, setLoading] = useState(true);
   const [errorKey, setErrorKey] = useState<
     "notConfigured" | "paidLocked" | "startError" | null
@@ -66,11 +72,12 @@ export function QuizPlay({ packId }: QuizPlayProps) {
         return;
       }
 
-      try {
-        const started = await requestStartQuiz({ packId, locale });
-        if (cancelled) {
-          return;
-        }
+      const applyStart = (started: {
+        remainingHearts: number;
+        updatedAt: string;
+        sessionId: string;
+        questions: PreparedQuestion[];
+      }) => {
         setHearts(started.remainingHearts);
         updateHearts(started.remainingHearts, started.updatedAt);
         setSessionId(started.sessionId);
@@ -78,14 +85,26 @@ export function QuizPlay({ packId }: QuizPlayProps) {
         setIndex(0);
         setFeedback(null);
         setErrorKey(null);
+      };
+
+      try {
+        applyStart(await requestStartQuiz({ packId, locale }));
       } catch (error) {
         const message = error instanceof Error ? error.message : "";
-        if (!cancelled) {
-          setErrorKey(
-            message.includes("Purchased pack permission required")
-              ? "paidLocked"
-              : "startError",
-          );
+        if (message.includes("Purchased pack permission required")) {
+          await refreshProfile();
+          if (cancelled) {
+            return;
+          }
+          try {
+            applyStart(await requestStartQuiz({ packId, locale }));
+          } catch {
+            if (!cancelled) {
+              setErrorKey("paidLocked");
+            }
+          }
+        } else if (!cancelled) {
+          setErrorKey("startError");
         }
       } finally {
         if (!cancelled) {
@@ -97,7 +116,7 @@ export function QuizPlay({ packId }: QuizPlayProps) {
     return () => {
       cancelled = true;
     };
-  }, [authLoading, locale, packId, updateHearts]);
+  }, [authLoading, locale, packId, updateHearts, refreshProfile]);
 
   const currentId = current?.phrase.id ?? null;
   if (currentId !== trackedAudioId) {
@@ -206,6 +225,9 @@ export function QuizPlay({ packId }: QuizPlayProps) {
       {status ? (
         <div className="mt-16 max-w-lg text-xl leading-relaxed text-cream/80">
           {status}
+          {errorKey === "paidLocked" ? (
+            <p className="mt-4 text-sm text-cream/65">{t("paidLockedHint")}</p>
+          ) : null}
           <div className="mt-8">
             <Link className="text-sm underline decoration-cream/30" href="/">
               {t("home")}

@@ -103,6 +103,7 @@ export const AppMessagesSchema = z.object({
     complete: requiredText,
     home: requiredText,
     paidLocked: requiredText,
+    paidLockedHint: requiredText,
     startError: requiredText,
     gradeError: requiredText,
     heartsEmpty: requiredText,
@@ -119,6 +120,10 @@ export const AppMessagesSchema = z.object({
     body: requiredText,
     cta: requiredText,
     accountCta: requiredText,
+    confirming: requiredText,
+    timeout: requiredText,
+    retry: requiredText,
+    contact: requiredText,
   }),
   Account: z.object({
     title: requiredText,

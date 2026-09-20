@@ -47,6 +47,7 @@
     "complete": "1 minute terminée !",
     "home": "Retour à l'accueil",
     "paidLocked": "Achat requis pour ce pack.",
+    "paidLockedHint": "Si vous venez de payer, patientez un instant puis rechargez cette page.",
     "startError": "Impossible de démarrer ce pack.",
     "gradeError": "Impossible de noter cette réponse. Réessayez.",
     "heartsEmpty": "Plus de cœurs. Ils se régénèrent avec le temps.",
@@ -62,7 +63,11 @@
     "title": "Paiement reçu",
     "body": "Stripe confirme l'achat. Le pack voyage se déverrouille après vérification du webhook — cette page n'accorde pas l'accès.",
     "cta": "Ouvrir le pack voyage",
-    "accountCta": "Voir les achats"
+    "accountCta": "Voir les achats",
+    "confirming": "Confirmation du paiement…",
+    "timeout": "Le déblocage prend plus de temps que prévu. Réessayez bientôt, ou consultez vos achats.",
+    "retry": "Vérifier à nouveau",
+    "contact": "Contact : {email}"
   },
   "Account": {
     "title": "Achats",

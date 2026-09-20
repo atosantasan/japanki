@@ -47,6 +47,7 @@
     "complete": "1 Minute geschafft!",
     "home": "Zur Startseite",
     "paidLocked": "Für dieses Paket ist ein Kauf nötig.",
+    "paidLockedHint": "Wenn du gerade bezahlt hast, warte kurz und lade diese Seite neu.",
     "startError": "Dieses Paket konnte nicht gestartet werden.",
     "gradeError": "Diese Antwort konnte nicht bewertet werden. Bitte erneut wählen.",
     "heartsEmpty": "Keine Herzen mehr. Sie füllen sich mit der Zeit.",
@@ -62,7 +63,11 @@
     "title": "Zahlung erhalten",
     "body": "Stripe bestätigt den Kauf. Das Reisepaket wird nach der Webhook-Prüfung freigeschaltet — diese Seite vergibt keine Rechte.",
     "cta": "Reisepaket öffnen",
-    "accountCta": "Käufe ansehen"
+    "accountCta": "Käufe ansehen",
+    "confirming": "Zahlung wird bestätigt…",
+    "timeout": "Die Freischaltung dauert länger als erwartet. Versuche es gleich noch einmal oder prüfe deine Käufe.",
+    "retry": "Erneut prüfen",
+    "contact": "Kontakt: {email}"
   },
   "Account": {
     "title": "Käufe",

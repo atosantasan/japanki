@@ -178,7 +178,7 @@ graph TD
 | **ページ** | `src/app/[locale]/page.tsx` | ホーム。Survival / Travel CTA と購入ボタン |
 | **ページ** | `src/app/[locale]/quiz/[packId]/page.tsx` | クイズシェル。本体は `QuizPlay` |
 | **ページ** | `src/app/[locale]/account/page.tsx` | 購入一覧・Portal 導線 |
-| **ページ** | `src/app/[locale]/success/page.tsx` | 決済後案内。権限付与はしない |
+| **ページ** | `src/app/[locale]/success/page.tsx` | 決済後案内。purchase-status をポーリング。権限付与はしない |
 | **ページ** | `src/app/[locale]/{terms,privacy,legal}/page.tsx` | 規約・プライバシー・特商法 |
 | **Proxy** | `src/proxy.ts` | next-intl ルーティング + `attachSupabaseSession` |
 | **API** | `GET /api/phrases` | 認証・購入・Zod 済みフレーズ返却（`correct_choice_index` 非含） |
