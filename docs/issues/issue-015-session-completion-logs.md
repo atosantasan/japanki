@@ -11,5 +11,11 @@
 2. 正答も学習ログとして記録する。
 
 ## 3. 受入条件（Acceptance Criteria）
-- [ ] 完了セッションの completed_at が非 NULL であること。
-- [ ] 5 問の正誤を DB から再構築できること。
+- [x] 完了セッションの completed_at が非 NULL であること。
+- [x] 5 問の正誤を DB から再構築できること。
+
+## 4. 実装メモ
+
+- `011_quiz_session_completion.sql` が `quiz_answers` を追加し、`submit_answer` が割当数一致時に `completed_at` を更新する。
+- `quiz_attempts` は初回誤答のまま。分析用ビューは作らない（ダッシュボード未実装、PostgREST 暴露面を増やさない）。
+- 本番 Supabase への `011` 適用は別途手動。

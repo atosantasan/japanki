@@ -4,6 +4,7 @@
 > | バージョン | 日付 | 変更内容 |
 > |---|---|---|
 > | v1.0 | 2026-09-19 | 現行実装と PRD v3.2 を突合した as-is 初版 |
+> | v1.1 | 2026-09-21 | Issue #15: `completed_at` と `quiz_answers` を実装 |
 
 ---
 
@@ -84,7 +85,7 @@
 - **F-1-2: 不足パックの拒否**: パック内フレーズが 5 未満ならセッションを作らず例外でロールバックする（AC-QUIZ-06）。
 - **F-1-3: 有料パック権限**: 有料パックは `user_purchases` に本人レコードがなければ RPC が例外を返す（AC-QUIZ-07）。
 - **F-1-4: 表示時シャッフルとサーバー採点**: 3 択は表示時にシャッフルする（`shuffleChoiceOrder`）。正誤判定はクライアント比較ではなく、選択テキストを `POST /api/quiz/submit-answer`（または `submit_answer` RPC）に送りサーバー側で行う。`POST /api/quiz/start` と `GET /api/phrases` は `correct_choice_index` / `correctChoiceText` を返さない。
-- **F-1-5: 完了演出**: 5 問終了後に「1-minute complete!」相当の完了画面を出す。DB の `quiz_sessions.completed_at` 更新は現行未実装。
+- **F-1-5: 完了演出**: 5 問終了後に「1-minute complete!」相当の完了画面を出す。`submit_answer` が割当済みの `quiz_session_questions` 件数と `quiz_answers` 件数が一致したとき `quiz_sessions.completed_at` を now() で更新する（Issue #15 / `011`）。正誤は `quiz_answers` に残る。`quiz_attempts` は初回誤答・ハート減算の重複防止専用のまま。
 
 ### ② ハートモジュール
 
@@ -171,7 +172,6 @@
 | フレーズ音声ファイル `public/audio/*.mp3` | 未配置。生成トーンへフォールバック |
 | PWA アイコン `/icon-192.png`, `/icon-512.png` | Manifest が参照。リポジトリ `public/` には未配置。テストでパス規約を検証 |
 | `profiles.last_x_shared_at` | スキーマのみ。X シェア回復は未実装 |
-| `quiz_sessions.completed_at` | カラムのみ。完了書き込みなし |
 | ハート 0 での解答ロック | 回復後ハートが 0 なら解答不可（UI + 採点 API） |
 | オフラインでの新規セッション | 不可（RPC / API 必須） |
 | Webhook と Success のレース | Success 直後のクイズ開始が未購入扱いになり得る |
