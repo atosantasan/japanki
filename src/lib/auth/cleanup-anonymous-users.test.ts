@@ -7,6 +7,7 @@ import {
   cleanupAnonymousUsers,
   handleAnonymousCleanupRequest,
   selectAnonymousUserIdsForCleanup,
+  selectStaleSubmitAnswerCallIds,
 } from "@/lib/auth/cleanup-anonymous-users";
 
 const now = new Date("2026-09-21T00:00:00.000Z");
@@ -105,6 +106,7 @@ describe("cleanupAnonymousUsers", () => {
 describe("handleAnonymousCleanupRequest", () => {
   it("rejects requests without a matching CRON_SECRET bearer token", async () => {
     const deleteAuthUser = vi.fn();
+    const deleteStaleSubmitAnswerCalls = vi.fn();
     const result = await handleAnonymousCleanupRequest({
       authorizationHeader: "Bearer wrong",
       cronSecret: "cron-secret",
@@ -112,15 +114,19 @@ describe("handleAnonymousCleanupRequest", () => {
         listAnonymousProfiles: vi.fn(),
         listPurchasedUserIds: vi.fn(),
         deleteAuthUser,
+        deleteStaleSubmitAnswerCalls,
       },
     });
 
     expect(result.status).toBe(401);
     expect(result.body).toEqual({ error: "unauthorized" });
     expect(deleteAuthUser).not.toHaveBeenCalled();
+    expect(deleteStaleSubmitAnswerCalls).not.toHaveBeenCalled();
   });
 
   it("runs cleanup when the cron bearer token matches", async () => {
+    const deleteStaleSubmitAnswerCalls = vi.fn().mockResolvedValue(4);
+    const info = vi.spyOn(console, "info").mockImplementation(() => undefined);
     const result = await handleAnonymousCleanupRequest({
       authorizationHeader: "Bearer cron-secret",
       cronSecret: "cron-secret",
@@ -130,12 +136,45 @@ describe("handleAnonymousCleanupRequest", () => {
         ]),
         listPurchasedUserIds: vi.fn().mockResolvedValue([]),
         deleteAuthUser: vi.fn().mockResolvedValue(undefined),
+        deleteStaleSubmitAnswerCalls,
       },
       now,
     });
 
     expect(result.status).toBe(200);
-    expect(result.body).toEqual({ deleted: 1, failed: 0 });
+    expect(result.body).toEqual({
+      deleted: 1,
+      failed: 0,
+      submitAnswerCallsDeleted: 4,
+    });
+    expect(deleteStaleSubmitAnswerCalls).toHaveBeenCalledWith(
+      new Date(now.getTime() - 60 * 60 * 1000).toISOString(),
+    );
+    expect(info).toHaveBeenCalledWith(
+      "Submit answer call cleanup",
+      expect.objectContaining({ deleted: 4 }),
+    );
+    info.mockRestore();
+  });
+});
+
+describe("selectStaleSubmitAnswerCallIds", () => {
+  it("deletes rows older than one hour and keeps newer ones", () => {
+    const ids = selectStaleSubmitAnswerCallIds({
+      rows: [
+        {
+          id: "old-call",
+          called_at: new Date(now.getTime() - 61 * 60 * 1000).toISOString(),
+        },
+        {
+          id: "fresh-call",
+          called_at: new Date(now.getTime() - 59 * 60 * 1000).toISOString(),
+        },
+      ],
+      now,
+    });
+
+    expect(ids).toEqual(["old-call"]);
   });
 });
 
@@ -161,5 +200,7 @@ describe("anonymous cleanup scheduling", () => {
     expect(route).toMatch(/export async function GET/);
     expect(route).toMatch(/export async function POST/);
     expect(route).toMatch(/auth\.admin\.deleteUser/);
+    expect(route).toMatch(/submit_answer_calls/);
+    expect(route).toMatch(/called_at/);
   });
 });
