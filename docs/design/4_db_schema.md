@@ -15,6 +15,7 @@
 4. `004_submit_answer_and_billing_guards.sql` — `submit_answer` RPC と購入履歴の保護
 5. `005_fk_on_delete_policy.sql` — パック/フレーズ参照 FK を ON DELETE RESTRICT に付け替え
 6. `006_content_packs_price_and_active.sql` — `price_usd` numeric(10,2) と論理削除 `is_active`
+7. `007_diversify_seed_correct_index.sql` — シードの `correct_choice_index` を 0/1/2 に分散（Issue #16）
 
 ---
 
@@ -152,7 +153,7 @@ SELECT は全員可（購入履歴のタイトル表示のため非アクティ�
 | `audio_url` | text | 例: `/audio/arigatou.mp3` |
 | `translations` | jsonb | 8 言語の訳 |
 | `choices_by_lang` | jsonb | 8 言語 × 3 択 |
-| `correct_choice_index` | integer | 0〜2。シードはすべて 0（先頭が正解） |
+| `correct_choice_index` | integer | 0〜2。シードはパック内で 0/1/2 に分散（`007`、Issue #16） |
 | `sort_order` | integer | API 取得時の並び。セッション内順は `position` |
 
 クライアント SELECT は **無料パックのみ**。有料は `/api/phrases` + Admin。
@@ -282,7 +283,7 @@ Survival（無料）: ありがとう / すみません / 水をください / �
 
 Travel（有料 USD 2.99）: いくらですか / 駅はどこですか / おいしい / 助けて / 英語が話せますか  
 
-各 `choices_by_lang` は 8 言語とも 3 要素。`correct_choice_index = 0`。音声パスは `/audio/*.mp3`（ファイル未配置時はクライアントが生成トーン）。
+各 `choices_by_lang` は 8 言語とも 3 要素。`correct_choice_index` はパック内で 0,1,2,0,1。各言語配列のその位置が `translations` と一致する。音声パスは `/audio/*.mp3`（ファイル未配置時はクライアントが生成トーン）。
 
 ---
 

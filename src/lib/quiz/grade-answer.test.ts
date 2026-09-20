@@ -57,4 +57,35 @@ describe("gradeSelectedChoice", () => {
     expect(result.isCorrect).toBe(true);
     expect(result.correctChoiceText).toBe("Thank you");
   });
+
+  it("grades the stored index-2 text as correct in every content locale", () => {
+    const rotated = {
+      en: ["Sorry", "Hello", "Thank you"],
+      "zh-TW": ["對不起", "你好", "謝謝"],
+      "zh-CN": ["对不起", "你好", "谢谢"],
+      ko: ["미안합니다", "안녕하세요", "감사합니다"],
+      th: ["ขอโทษ", "สวัสดี", "ขอบคุณ"],
+      fr: ["Désolé", "Bonjour", "Merci"],
+      de: ["Entschuldigung", "Hallo", "Danke"],
+      es: ["Lo siento", "Hola", "Gracias"],
+    } as typeof choicesByLang;
+
+    const result = gradeSelectedChoice({
+      selectedChoiceText: "Merci",
+      choicesByLang: rotated,
+      correctChoiceIndex: 2,
+      locale: "fr",
+    });
+
+    expect(result.isCorrect).toBe(true);
+    expect(result.correctChoiceText).toBe("Merci");
+    expect(
+      gradeSelectedChoice({
+        selectedChoiceText: "Désolé",
+        choicesByLang: rotated,
+        correctChoiceIndex: 2,
+        locale: "fr",
+      }).isCorrect,
+    ).toBe(false);
+  });
 });

@@ -77,6 +77,40 @@ describe("PhraseContentSchema", () => {
     expect(parsed.correct_choice_index).toBe(0);
     expect(parsed.translations.en).toBe("Thank you");
   });
+
+  it("accepts a phrase whose correct choice is not the first option", () => {
+    const parsed = PhraseContentSchema.parse({
+      romaji: "oishii",
+      japanese: "おいしい",
+      audio_url: "/audio/oishii.mp3",
+      translations: {
+        ...completeTranslations,
+        en: "Delicious",
+        "zh-TW": "好吃",
+        "zh-CN": "好吃",
+        ko: "맛있어요",
+        th: "อร่อย",
+        fr: "Délicieux",
+        de: "Lecker",
+        es: "Delicioso",
+      },
+      choices_by_lang: {
+        en: ["Spicy", "Expensive", "Delicious"],
+        "zh-TW": ["辣", "貴", "好吃"],
+        "zh-CN": ["辣", "贵", "好吃"],
+        ko: ["매워요", "비싸요", "맛있어요"],
+        th: ["เผ็ด", "แพง", "อร่อย"],
+        fr: ["Épicé", "Cher", "Délicieux"],
+        de: ["Scharf", "Teuer", "Lecker"],
+        es: ["Picante", "Caro", "Delicioso"],
+      },
+      correct_choice_index: 2,
+    });
+
+    expect(parsed.correct_choice_index).toBe(2);
+    expect(parsed.choices_by_lang.en[2]).toBe(parsed.translations.en);
+    expect(parsed.choices_by_lang.fr).toHaveLength(3);
+  });
 });
 
 describe("PublicPhraseRecordSchema", () => {
