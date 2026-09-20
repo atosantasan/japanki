@@ -31,7 +31,11 @@
     "checkoutGuard": "請先連結帳號才能購買此教材包",
     "checkoutRedirecting": "正在前往結帳頁面…",
     "checkoutError": "無法開始結帳，請再試一次。",
-    "alreadyPurchased": "您已購買此教材包"
+    "alreadyPurchased": "您已購買此教材包",
+    "checkoutConfirmTitle": "帳號已連結",
+    "checkoutConfirmBody": "連結完成。要繼續購買「{pack}」嗎？",
+    "checkoutConfirmContinue": "繼續",
+    "checkoutConfirmCancel": "取消"
   },
   "Quiz": {
     "loading": "正在準備五題…",

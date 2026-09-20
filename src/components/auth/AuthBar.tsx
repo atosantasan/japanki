@@ -7,6 +7,7 @@ import { useAuth } from "@/components/auth/AuthProvider";
 
 export function AuthBar() {
   const t = useTranslations("Auth");
+  const tHome = useTranslations("HomePage");
   const {
     configured,
     loading,
@@ -15,9 +16,13 @@ export function AuthBar() {
     authError,
     linkModalOpen,
     linkModalReason,
+    checkoutConfirmPackId,
+    isCheckingOut,
     openLinkModal,
     closeLinkModal,
     clearAuthError,
+    confirmPendingCheckout,
+    cancelPendingCheckout,
     continueWithGoogle,
     continueWithEmail,
     signOut,
@@ -40,6 +45,54 @@ export function AuthBar() {
     clearAuthError();
     closeLinkModal();
   }
+
+  const confirmPackName =
+    checkoutConfirmPackId === "travel"
+      ? tHome("travelCta")
+      : (checkoutConfirmPackId ?? "");
+
+  const confirmModal =
+    checkoutConfirmPackId && typeof document !== "undefined"
+      ? createPortal(
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-ink/80 px-4"
+            onClick={cancelPendingCheckout}
+          >
+            <div
+              className="w-full max-w-md rounded-3xl border border-cream/15 bg-[#1b1713] p-6 shadow-2xl"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <h2 className="text-xl font-semibold text-cream">
+                {t("checkoutConfirmTitle")}
+              </h2>
+              <p className="mt-3 text-sm leading-relaxed text-cream/75">
+                {t("checkoutConfirmBody", { pack: confirmPackName })}
+              </p>
+              <div className="mt-5 flex flex-col gap-3">
+                <button
+                  type="button"
+                  disabled={isCheckingOut}
+                  className="rounded-full bg-sun px-4 py-3 text-sm font-semibold text-cream disabled:cursor-not-allowed disabled:opacity-60"
+                  onClick={confirmPendingCheckout}
+                >
+                  {isCheckingOut
+                    ? t("checkoutRedirecting")
+                    : t("checkoutConfirmContinue")}
+                </button>
+                <button
+                  type="button"
+                  disabled={isCheckingOut}
+                  className="rounded-full border border-cream/30 px-4 py-3 text-sm text-cream disabled:cursor-not-allowed disabled:opacity-60"
+                  onClick={cancelPendingCheckout}
+                >
+                  {t("checkoutConfirmCancel")}
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body,
+        )
+      : null;
 
   const modal =
     linkModalOpen && typeof document !== "undefined"
@@ -166,6 +219,7 @@ export function AuthBar() {
         )}
       </div>
       {modal}
+      {confirmModal}
     </>
   );
 }

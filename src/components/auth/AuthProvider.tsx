@@ -19,6 +19,7 @@ import {
 import { syncProfileSafely } from "@/lib/auth/sync-profile";
 import {
   clearPendingCheckoutPack,
+  consumePendingCheckoutPack,
   getPendingCheckoutPack,
   setPendingCheckoutPack,
 } from "@/lib/billing/pending-checkout";
@@ -44,6 +45,7 @@ type AuthContextValue = {
   linkModalOpen: boolean;
   linkModalReason: LinkModalReason;
   pendingCheckoutPackId: string | null;
+  checkoutConfirmPackId: string | null;
   isCheckingOut: boolean;
   checkoutError: string | null;
   ownedPackIds: string[];
@@ -51,6 +53,8 @@ type AuthContextValue = {
   closeLinkModal: () => void;
   clearAuthError: () => void;
   clearCheckoutError: () => void;
+  confirmPendingCheckout: () => void;
+  cancelPendingCheckout: () => void;
   triggerCheckout: (packId: string) => Promise<void>;
   continueWithGoogle: (mode: "link" | "existing") => Promise<void>;
   continueWithEmail: (email: string, mode: "link" | "existing") => Promise<void>;
@@ -114,6 +118,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     return null;
   });
+  const [checkoutConfirmPackId, setCheckoutConfirmPackId] = useState<
+    string | null
+  >(null);
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [ownedPackIds, setOwnedPackIds] = useState<string[]>([]);
@@ -243,6 +250,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [locale, openLinkModal, refreshProfile],
   );
 
+  const confirmPendingCheckout = useCallback(() => {
+    const packId = checkoutConfirmPackId;
+    if (!packId) {
+      return;
+    }
+    setCheckoutConfirmPackId(null);
+    void triggerCheckout(packId);
+  }, [checkoutConfirmPackId, triggerCheckout]);
+
+  const cancelPendingCheckout = useCallback(() => {
+    setCheckoutConfirmPackId(null);
+    clearPendingCheckoutPack();
+  }, []);
+
   useEffect(() => {
     if (!configured) {
       return;
@@ -297,6 +318,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       } else if (event === "SIGNED_OUT") {
         autoCheckoutTriggeredRef.current = false;
+        setCheckoutConfirmPackId(null);
         setProfile(null);
         setOwnedPackIds([]);
       }
@@ -324,23 +346,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         : null;
     const targetPack =
       pendingCheckoutPackId || getPendingCheckoutPack(searchParams);
-    if (targetPack) {
+    if (!targetPack) {
+      return;
+    }
+
+    autoCheckoutTriggeredRef.current = true;
+    consumePendingCheckoutPack(searchParams);
+    void Promise.resolve().then(() => {
+      setLinkModalOpen(false);
+      setPendingCheckoutPackId(null);
       if (isPackOwned(ownedPackIds, targetPack)) {
-        autoCheckoutTriggeredRef.current = true;
-        void (async () => {
-          clearPendingCheckoutPack();
-          setPendingCheckoutPackId(null);
-        })();
         return;
       }
-      autoCheckoutTriggeredRef.current = true;
-      void (async () => {
-        setLinkModalOpen(false);
-        setPendingCheckoutPackId(null);
-        await triggerCheckout(targetPack);
-      })();
-    }
-  }, [profile, isCheckingOut, ownedPackIds, pendingCheckoutPackId, triggerCheckout]);
+      setCheckoutConfirmPackId(targetPack);
+    });
+  }, [profile, isCheckingOut, ownedPackIds, pendingCheckoutPackId]);
 
   const continueWithGoogle = useCallback(
     async (mode: "link" | "existing") => {
@@ -430,6 +450,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
     autoCheckoutTriggeredRef.current = false;
+    setCheckoutConfirmPackId(null);
     const supabase = createBrowserSupabaseClient();
     await supabase.auth.signOut();
     await supabase.auth.signInAnonymously();
@@ -455,6 +476,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       linkModalOpen,
       linkModalReason,
       pendingCheckoutPackId,
+      checkoutConfirmPackId,
       isCheckingOut,
       checkoutError,
       ownedPackIds,
@@ -462,6 +484,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       closeLinkModal,
       clearAuthError,
       clearCheckoutError,
+      confirmPendingCheckout,
+      cancelPendingCheckout,
       triggerCheckout,
       continueWithGoogle,
       continueWithEmail,
@@ -471,10 +495,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }),
     [
       authError,
+      checkoutConfirmPackId,
       checkoutError,
       clearAuthError,
       clearCheckoutError,
       closeLinkModal,
+      confirmPendingCheckout,
+      cancelPendingCheckout,
       configured,
       continueWithEmail,
       continueWithGoogle,

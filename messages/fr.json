@@ -31,7 +31,11 @@
     "checkoutGuard": "Liez un compte pour acheter ce pack",
     "checkoutRedirecting": "Redirection vers le paiement…",
     "checkoutError": "Impossible de lancer le paiement. Veuillez réessayer.",
-    "alreadyPurchased": "Vous possédez déjà ce pack."
+    "alreadyPurchased": "Vous possédez déjà ce pack.",
+    "checkoutConfirmTitle": "Compte associé",
+    "checkoutConfirmBody": "La liaison est terminée. Continuer l’achat de « {pack} » ?",
+    "checkoutConfirmContinue": "Continuer",
+    "checkoutConfirmCancel": "Annuler"
   },
   "Quiz": {
     "loading": "Préparation de cinq questions…",
