@@ -64,11 +64,35 @@ describe("resolvePhraseAccess", () => {
     expect(result).toEqual({ ok: true });
   });
 
-  it("rejects inactive packs as not found even when purchased", () => {
+  it("allows purchased paid packs while they are temporarily inactive", () => {
     const result = resolvePhraseAccess({
       userId: "user-1",
       pack: { id: "travel", is_free: false, is_active: false },
       hasPurchase: true,
+    });
+
+    expect(result).toEqual({ ok: true });
+  });
+
+  it("hides inactive paid packs from users without a purchase row", () => {
+    const result = resolvePhraseAccess({
+      userId: "user-1",
+      pack: { id: "travel", is_free: false, is_active: false },
+      hasPurchase: false,
+    });
+
+    expect(result).toEqual({
+      ok: false,
+      status: 404,
+      error: "Content pack not found",
+    });
+  });
+
+  it("rejects inactive free packs as not found", () => {
+    const result = resolvePhraseAccess({
+      userId: "user-1",
+      pack: { id: "survival", is_free: true, is_active: false },
+      hasPurchase: false,
     });
 
     expect(result).toEqual({

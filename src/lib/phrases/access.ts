@@ -17,8 +17,15 @@ export function resolvePhraseAccess(input: {
     return { ok: false, status: 401, error: "Not authenticated" };
   }
 
-  if (!input.pack || !input.pack.is_active) {
+  if (!input.pack) {
     return { ok: false, status: 404, error: "Content pack not found" };
+  }
+
+  if (!input.pack.is_active) {
+    if (input.pack.is_free || !input.hasPurchase) {
+      return { ok: false, status: 404, error: "Content pack not found" };
+    }
+    return { ok: true };
   }
 
   if (!input.pack.is_free && !input.hasPurchase) {
