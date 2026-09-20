@@ -1,6 +1,16 @@
 import type { SubmitAnswerResult } from "@/lib/quiz/rpc-client";
 import type { SubmitAnswerBody } from "@/lib/quiz/submit-answer";
 
+function errorFromBody(json: unknown): string {
+  if (json && typeof json === "object" && "error" in json) {
+    const error = (json as { error: unknown }).error;
+    if (typeof error === "string" && error.length > 0) {
+      return error;
+    }
+  }
+  return "Unable to grade answer";
+}
+
 export async function requestSubmitAnswer(
   input: SubmitAnswerBody,
 ): Promise<SubmitAnswerResult> {
@@ -13,7 +23,7 @@ export async function requestSubmitAnswer(
   });
   const json: unknown = await response.json().catch(() => null);
   if (!response.ok) {
-    throw new Error("Unable to grade answer");
+    throw new Error(errorFromBody(json));
   }
   if (
     !json ||

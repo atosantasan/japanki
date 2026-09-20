@@ -50,6 +50,8 @@
     "paidLockedHint": "決済直後の場合は、少し時間をおいて再読み込みしてください。",
     "startError": "このパックを開始できませんでした。",
     "gradeError": "解答を判定できませんでした。もう一度選んでください。",
+    "invalidChoice": "表示内容が最新でない可能性があります。問題を読み込み直してください。",
+    "reloadQuiz": "問題を読み込み直す",
     "heartsEmpty": "ハートがありません。時間とともに回復します。",
     "notConfigured": "Supabaseがまだ設定されていません。",
     "audioFallback": "フレーズ音声がまだないため、Japankiは生成したトーンを再生しています。"

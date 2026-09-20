@@ -50,6 +50,8 @@
     "paidLockedHint": "若剛完成付款，請稍候再重新整理此頁面。",
     "startError": "無法開始這個教材包。",
     "gradeError": "無法判定這題，請再試一次。",
+    "invalidChoice": "畫面內容可能不是最新。請重新載入題目。",
+    "reloadQuiz": "重新載入題目",
     "heartsEmpty": "愛心用完了，會隨時間回復。",
     "notConfigured": "尚未設定 Supabase。",
     "audioFallback": "尚未提供語句音檔，Japanki 改為播放產生的音調。"

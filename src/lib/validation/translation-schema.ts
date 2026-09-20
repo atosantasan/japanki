@@ -107,6 +107,8 @@ export const AppMessagesSchema = z.object({
     startError: requiredText,
     gradeError: requiredText,
     heartsEmpty: requiredText,
+    invalidChoice: requiredText,
+    reloadQuiz: requiredText,
     notConfigured: requiredText,
     audioFallback: requiredText,
   }),

@@ -50,6 +50,8 @@
     "paidLockedHint": "Si vous venez de payer, patientez un instant puis rechargez cette page.",
     "startError": "Impossible de démarrer ce pack.",
     "gradeError": "Impossible de noter cette réponse. Réessayez.",
+    "invalidChoice": "L'affichage n'est peut-être plus à jour. Rechargez les questions.",
+    "reloadQuiz": "Recharger les questions",
     "heartsEmpty": "Plus de cœurs. Ils se régénèrent avec le temps.",
     "notConfigured": "Supabase n'est pas encore configuré.",
     "audioFallback": "L’audio de la phrase n’est pas encore disponible : Japanki joue une tonalité générée."

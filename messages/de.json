@@ -50,6 +50,8 @@
     "paidLockedHint": "Wenn du gerade bezahlt hast, warte kurz und lade diese Seite neu.",
     "startError": "Dieses Paket konnte nicht gestartet werden.",
     "gradeError": "Diese Antwort konnte nicht bewertet werden. Bitte erneut wählen.",
+    "invalidChoice": "Die Anzeige ist möglicherweise nicht aktuell. Bitte die Fragen neu laden.",
+    "reloadQuiz": "Fragen neu laden",
     "heartsEmpty": "Keine Herzen mehr. Sie füllen sich mit der Zeit.",
     "notConfigured": "Supabase ist noch nicht konfiguriert.",
     "audioFallback": "Phrasen-Audio ist noch nicht verfügbar. Japanki spielt einen erzeugten Ton."
