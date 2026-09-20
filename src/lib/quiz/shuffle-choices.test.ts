@@ -59,4 +59,18 @@ describe("shuffleChoices", () => {
       /unique/i,
     );
   });
+
+  it("recalculates the correct index when the stored answer is last", () => {
+    const original = ["Sorry", "Hello", "Thank you"];
+    const result = shuffleChoices(
+      original,
+      2,
+      createSequenceRandom([0, 0]),
+    );
+
+    expect(result.choices[result.correctIndex]).toBe("Thank you");
+    expect(original[2]).toBe("Thank you");
+    expect(result.choices).toHaveLength(3);
+    expect([...result.choices].sort()).toEqual([...original].sort());
+  });
 });

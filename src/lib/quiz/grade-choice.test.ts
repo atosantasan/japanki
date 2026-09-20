@@ -31,6 +31,23 @@ describe("quiz choice grading after shuffleChoices", () => {
     expect(shuffled.choices[shuffled.correctIndex]).toBe("Thank you");
   });
 
+  it("treats a stored index of 2 as the answer, so picking 0 without shuffle is wrong", () => {
+    const storedChoices = ["Sorry", "Hello", "Thank you"];
+    const storedCorrectIndex = 2;
+    const shuffled = shuffleChoices(
+      storedChoices,
+      storedCorrectIndex,
+      createSequenceRandom([0, 0]),
+    );
+
+    expect(isCorrectChoice(0, storedCorrectIndex)).toBe(false);
+    expect(storedChoices[storedCorrectIndex]).toBe("Thank you");
+    expect(isCorrectChoice(shuffled.correctIndex, shuffled.correctIndex)).toBe(
+      true,
+    );
+    expect(shuffled.choices[shuffled.correctIndex]).toBe("Thank you");
+  });
+
   it("keeps grading stable across many shuffles of the same phrase", () => {
     const storedChoices = ["Water, please", "Check please", "Good morning"];
     const storedCorrectIndex = 0;
