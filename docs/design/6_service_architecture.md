@@ -180,18 +180,18 @@ graph TD
 
 | 対策 | 実装 | 閾値 |
 |---|---|---|
-| 匿名アカウント掃除 | Vercel Cron（毎日 03:00 UTC）が `GET /api/internal/cleanup-anonymous-users` を呼び、`auth.users` を削除。`profiles` / `quiz_sessions` / `quiz_session_questions` / `quiz_attempts` / `quiz_answers` / `user_purchases` / `submit_answer_calls` は ON DELETE CASCADE。同じ job が 1時間超の `submit_answer_calls` も DELETE | `is_anonymous = true` かつ `created_at` が `ANONYMOUS_RETENTION_DAYS`（30日）以上前、かつ `user_purchases` なし |
+| 匿名アカウント掃除 | Vercel Cron（毎日 03:00 UTC）が `GET /api/internal/cleanup-anonymous-users` を呼び、`auth.users` を削除。`profiles` / `quiz_sessions`（questions / attempts / answers）/ `submit_answer_calls` は ON DELETE CASCADE。`user_purchases.user_id` は SET NULL（`012`）。同じ job が 1時間超の `submit_answer_calls` も DELETE | `is_anonymous = true` かつ `created_at` が `ANONYMOUS_RETENTION_DAYS`（30日）以上前、かつ `user_purchases` なし |
 | セッション開始レート制限 | `create_quiz_session` が直近1時間の `quiz_sessions` を COUNT。専用カウンタテーブルは作らない。`idx_quiz_sessions_user_id_created_at` | `QUIZ_START_RATE_LIMIT_PER_HOUR` = 20。超過は `Rate limit exceeded` / HTTP 429 |
 | 回答送信レート制限 | `submit_answer` が直近1時間の `submit_answer_calls` を COUNT（BFF 経由でも RPC 直叩きでも同じ）。`idx_submit_answer_calls_user_id_called_at`。Next.js in-memory limiter は撤去 | `SUBMIT_ANSWER_RATE_LIMIT_PER_HOUR` = 60。超過は `Rate limit exceeded` / HTTP 429 |
 
 ### 本番適用（手動）
 
-1. Supabase SQL Editor で `009_quiz_start_rate_limit.sql`、`010_submit_answer_rate_limit.sql`、`011_quiz_session_completion.sql` を適用する。`010` 未適用だと回答 60回/時は効かない。`011` 未適用だと `completed_at` と `quiz_answers` は書かれない。
+1. Supabase SQL Editor で `009_quiz_start_rate_limit.sql`、`010_submit_answer_rate_limit.sql`、`011_quiz_session_completion.sql`、`012_gdpr_account_deletion.sql` を適用する。`010` 未適用だと回答 60回/時は効かない。`011` 未適用だと `completed_at` と `quiz_answers` は書かれない。`012` 未適用だと退会時に購入行が消え、`export_my_data` が無い。
 2. Vercel 環境変数に `CRON_SECRET` を設定する（`NEXT_PUBLIC_` にしない）。Vercel Cron は `Authorization: Bearer ${CRON_SECRET}` を付ける。
 3. `vercel.json` の既存 cron（毎日 03:00 UTC、`/api/internal/cleanup-anonymous-users`）が匿名アカウント掃除に加え、1時間より古い `submit_answer_calls` も削除する。Hobby は日次 cron まで。手動確認は `Authorization: Bearer $CRON_SECRET` 付きで GET または POST。
 4. pg_cron は使わない（このリポジトリのテストと Vercel だけで完結させるため）。
 
-`quiz_sessions.user_id` / `user_purchases.user_id` は当初から `profiles` ON DELETE CASCADE。Issue #25 の pack/phrase FK 変更対象外。`auth.users` 削除で孤児は残らない。
+`quiz_sessions.user_id` は `profiles` ON DELETE CASCADE。`user_purchases.user_id` は Issue #20 / `012` で ON DELETE SET NULL（NULL 可）。Issue #25 の pack/phrase FK 変更対象外。自己退会は `POST /api/account/delete` が `auth.admin.deleteUser` を呼び、Stripe Customer は email 検索のうえ `customers.del` を best-effort。
 
 ## 7. 将来考慮（未実装）
 

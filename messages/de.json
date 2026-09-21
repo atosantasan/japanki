@@ -80,7 +80,19 @@
     "signInRequired": "Verknüpfen Sie ein Konto, um Käufe und Abrechnung zu sehen.",
     "noCustomer": "Kein Stripe-Kunde für diese E-Mail. Schließen Sie zuerst einen Kauf ab.",
     "error": "Abrechnungsdaten konnten nicht geladen werden.",
-    "openPack": "Paket öffnen"
+    "openPack": "Paket öffnen",
+    "privacyTitle": "Ihre Daten",
+    "privacyBody": "Exportieren Sie Profil, Käufe und Quizverlauf als JSON oder löschen Sie das Konto. Gastkonten (anonym) können sich ebenfalls selbst löschen.",
+    "exportData": "Meine Daten exportieren",
+    "deleteAccount": "Konto löschen",
+    "deleteWarning": "Anmeldung, Profil und Quizverlauf werden dauerhaft gelöscht. Kaufzeilen bleiben ohne Benutzer-ID für Steuern und Rückerstattungen. Das kann nicht rückgängig gemacht werden.",
+    "deleteConfirmLabel": "Geben Sie {confirm} zur Bestätigung ein",
+    "deleteConfirm": "Dauerhaft löschen",
+    "deleteCancel": "Abbrechen",
+    "deleteError": "Konto konnte nicht gelöscht werden.",
+    "exportError": "Daten konnten nicht exportiert werden.",
+    "exporting": "Exportiere…",
+    "deleting": "Lösche…"
   },
   "Legal": {
     "termsNav": "Nutzungsbedingungen",
@@ -157,7 +169,7 @@
       },
       "deletion": {
         "title": "6. Löschung",
-        "body": "Zur Kontolöschung an japankiadm@gmail.com schreiben. Wir löschen oder anonymisieren, außer gesetzliche oder Betrugspräventionsgründe stehen entgegen."
+        "body": "Auf der Kaufseite können Sie Daten exportieren oder das Konto löschen. Der Export ist JSON von Profil, Käufen und Quizverlauf. Die Löschung entfernt Anmeldung, Profil und Quizdaten. Kaufzeilen bleiben ohne Benutzer-ID für Steuern und Rückerstattungen. Gastkonten (anonym) können sich ebenfalls selbst löschen. Kontakt: japankiadm@gmail.com."
       },
       "children": {
         "title": "7. Kinder",

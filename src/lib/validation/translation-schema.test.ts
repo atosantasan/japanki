@@ -149,6 +149,11 @@ describe("AppMessagesSchema", () => {
       expect(parsed.Legal.privacy.collect.body.length).toBeGreaterThan(0);
       expect(parsed.Legal.tokusho.valueEmail).toContain("japankiadm@gmail.com");
       expect(parsed.Account.manageBilling.length).toBeGreaterThan(0);
+      expect(parsed.Account.exportData.length).toBeGreaterThan(0);
+      expect(parsed.Account.deleteAccount.length).toBeGreaterThan(0);
+      expect(parsed.Legal.privacy.deletion.body).toMatch(
+        /account|アカウント|cuenta|compte|Konto|akun|บัญชี|账号|帳戶|帳號|계정/i,
+      );
       expect(parsed.Quiz.audioFallback.length).toBeGreaterThan(0);
     }
   });

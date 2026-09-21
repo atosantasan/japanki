@@ -60,13 +60,15 @@ graph TD
         R_Checkout["POST /api/checkout\n連携必須・二重購入防止"]
         R_Webhook["POST /api/stripe-webhook\n署名検証 → grantPurchase"]
         R_Portal["POST /api/billing/portal"]
+        R_Export["GET /api/account/export"]
+        R_Delete["POST /api/account/delete"]
         R_Callback["GET /auth/callback\ncode 交換 + sync_profile"]
     end
 
     subgraph External ["外部サービス"]
         SB_Auth["Supabase Auth"]
         SB_DB[("PostgreSQL\nprofiles / packs / phrases\nsessions / purchases")]
-        SB_RPC["RPC\ncreate_quiz_session\nconsume_heart\nsubmit_answer\nsync_profile"]
+        SB_RPC["RPC\ncreate_quiz_session\nconsume_heart\nsubmit_answer\nsync_profile\nexport_my_data"]
         Stripe_API["Stripe Checkout / Portal"]
         Vercel["Vercel CDN / Serverless"]
     end
@@ -177,7 +179,7 @@ graph TD
 |---|---|---|
 | **ページ** | `src/app/[locale]/page.tsx` | ホーム。Survival / Travel CTA と購入ボタン |
 | **ページ** | `src/app/[locale]/quiz/[packId]/page.tsx` | クイズシェル。本体は `QuizPlay` |
-| **ページ** | `src/app/[locale]/account/page.tsx` | 購入一覧・Portal 導線 |
+| **ページ** | `src/app/[locale]/account/page.tsx` | 購入一覧・Portal・エクスポート・退会 |
 | **ページ** | `src/app/[locale]/success/page.tsx` | 決済後案内。purchase-status をポーリング。権限付与はしない |
 | **ページ** | `src/app/[locale]/{terms,privacy,legal}/page.tsx` | 規約・プライバシー・特商法 |
 | **Proxy** | `src/proxy.ts` | next-intl ルーティング + `attachSupabaseSession` |
@@ -185,6 +187,8 @@ graph TD
 | **API** | `POST /api/checkout` | Identity 検証、二重購入防止、Checkout Session |
 | **API** | `POST /api/stripe-webhook` | 署名検証と `grantPurchase` |
 | **API** | `POST /api/billing/portal` | Customer Portal Session |
+| **API** | `GET /api/account/export` | セッション RPC `export_my_data` + `getUser` 識別子の JSON |
+| **API** | `POST /api/account/delete` | `deleteUser`。Stripe Customer 削除は best-effort |
 | **Auth CB** | `GET /auth/callback` | OAuth/OTP の code 交換。`sync_profile` を試行 |
 | **Context** | `src/components/auth/AuthProvider.tsx` | 匿名 boot、連携モーダル、所有パック、自動 Checkout |
 | **クイズ UI** | `src/components/quiz/QuizPlay.tsx` | セッション開始、出題、音声、誤答時ハート |

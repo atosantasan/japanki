@@ -10,6 +10,7 @@
 > | v1.4 | 2026-09-21 | Issue #17: `create_quiz_session` を同一 user 20回/時に制限（`009`） |
 > | v1.5 | 2026-09-21 | Issue #17 follow-up: `submit_answer` を `submit_answer_calls` COUNT で 60回/時に制限（`010`） |
 > | v1.6 | 2026-09-21 | Issue #15: `quiz_answers` と割当数一致時の `completed_at` 更新（`011`） |
+| v1.7 | 2026-09-21 | Issue #20: `user_purchases.user_id` を SET NULL、`export_my_data`（`012`） |
 
 マイグレーション適用順:
 
@@ -24,6 +25,7 @@
 9. `009_quiz_start_rate_limit.sql` — `quiz_sessions(user_id, created_at)` インデックスと `create_quiz_session` の 20回/時制限（Issue #17）
 10. `010_submit_answer_rate_limit.sql` — `submit_answer_calls` と `submit_answer` の 60回/時制限（Issue #17 follow-up）
 11. `011_quiz_session_completion.sql` — `quiz_answers` と割当数一致時の `completed_at` 更新（Issue #15）
+12. `012_gdpr_account_deletion.sql` — `user_purchases.user_id` を NULL 可 + ON DELETE SET NULL、`export_my_data`（Issue #20）
 
 ---
 
@@ -115,8 +117,9 @@ erDiagram
 
     user_purchases {
         uuid id PK
-        uuid user_id FK "ON DELETE CASCADE"
+        uuid user_id FK "ON DELETE SET NULL nullable"
         text pack_id FK "ON DELETE RESTRICT"
+        text stripe_payment_intent_id
         timestamptz created_at
     }
 
@@ -209,7 +212,7 @@ Zod（`PhraseRecordSchema`）は教材検証用に 8 言語キーと 3 択タプ
 
 ### 3-7. `user_purchases`
 
-UNIQUE (`user_id`, `pack_id`) が Webhook 再送の冪等キー。SELECT は本人のみ。INSERT は Admin の `grantPurchase` のみ（エラーコード `23505` は duplicate として成功扱い）。`stripe_payment_intent_id` で返金時の行特定を行う。`user_id` は profiles ON DELETE CASCADE、`pack_id` は content_packs ON DELETE RESTRICT（購入履歴をパック削除から守る）。
+UNIQUE (`user_id`, `pack_id`) が Webhook 再送の冪等キー（PostgreSQL は NULL 同士を重複と見なさない）。SELECT は本人のみ。INSERT は Admin の `grantPurchase` のみ（エラーコード `23505` は duplicate として成功扱い）。`stripe_payment_intent_id` で返金時の行特定を行う（Issue #20 でもハッシュしない）。`user_id` は NULL 可・profiles ON DELETE SET NULL（退会後も税務・返金用に行を残す、`012`）。`pack_id` は content_packs ON DELETE RESTRICT（購入履歴をパック削除から守る）。
 
 ### 3-8. `submit_answer_calls`
 
@@ -250,7 +253,9 @@ UNIQUE (`user_id`, `pack_id`) が Webhook 再送の冪等キー。SELECT は本�
 | `quiz_attempts.phrase_id` | `phrases.id` | RESTRICT | ハート減算履歴を保持する |
 | `quiz_answers.phrase_id` | `phrases.id` | RESTRICT | 正誤ログをフレーズ削除から守る |
 | `profiles.id` | `auth.users.id` | CASCADE | 既存。Auth 削除に追随 |
-| `*.user_id` / `*.session_id` | profiles / quiz_sessions | CASCADE | ユーザーまたはセッション削除時の子行掃除 |
+| `quiz_sessions.user_id` / `submit_answer_calls.user_id` | profiles | CASCADE | ユーザー削除時に学習データとレート制限ログを削除 |
+| `user_purchases.user_id` | profiles | SET NULL | Issue #20。退会後も購入行を税務・返金用に残す |
+| `*.session_id` | quiz_sessions | CASCADE | セッション削除時の子行掃除 |
 
 ---
 
@@ -317,6 +322,10 @@ UNIQUE (`user_id`, `pack_id`) が Webhook 再送の冪等キー。SELECT は本�
 
 クライアントは引数不一致時に `p_preferred_language` → `preferred_language_param` → 引数なし、の順でリトライする。
 
+### 5-5. `export_my_data()`
+
+`012_gdpr_account_deletion.sql`。引数なし。`auth.uid()` が null なら `Not authenticated`。本人の `profiles` / `user_purchases` / `quiz_sessions`（questions・answers・attempts を入れ子）を jsonb で返す。`submit_answer_calls` と教材マスタは含めない。`quiz_answers` はクライアント SELECT 不可のため、この SECURITY DEFINER 経由のみ。BFF `GET /api/account/export` がセッションの `getUser()` 識別子を足して JSON ダウンロードする。service_role での全件取得はしない。
+
 ---
 
 ## 6. RLS 方針
@@ -332,8 +341,8 @@ UNIQUE (`user_id`, `pack_id`) が Webhook 再送の冪等キー。SELECT は本�
 | `quiz_session_questions` | 自分のセッション経由 |
 | `user_purchases` | `auth.uid() = user_id` |
 | `quiz_attempts` | ポリシーなし（読めない） |
-| `quiz_answers` | ポリシーなし（読めない）。authenticated からも REVOKE |
-| `submit_answer_calls` | ポリシーなし（読めない）。authenticated からも REVOKE |
+| `quiz_answers` | ポリシーなし（読めない）。authenticated からも REVOKE。本人分は `export_my_data` のみ |
+| `submit_answer_calls` | ポリシーなし（読めない）。authenticated からも REVOKE。エクスポート対象外 |
 
 ---
 
