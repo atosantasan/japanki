@@ -80,7 +80,19 @@
     "signInRequired": "请先关联账号才能查看购买与账单。",
     "noCustomer": "找不到该邮箱对应的 Stripe 客户。请先完成购买。",
     "error": "无法加载账单信息。",
-    "openPack": "打开教材包"
+    "openPack": "打开教材包",
+    "privacyTitle": "你的数据",
+    "privacyBody": "可导出个人资料、购买和测验记录的 JSON，或删除账号。访客（匿名）账号也可自行删除。",
+    "exportData": "导出我的数据",
+    "deleteAccount": "删除账号",
+    "deleteWarning": "这将永久删除登录、个人资料和测验记录。购买记录会去掉用户 ID 后保留，用于税务和退款核对。此操作无法撤销。",
+    "deleteConfirmLabel": "请输入 {confirm} 以确认",
+    "deleteConfirm": "永久删除",
+    "deleteCancel": "取消",
+    "deleteError": "无法删除账号。",
+    "exportError": "无法导出数据。",
+    "exporting": "正在导出…",
+    "deleting": "正在删除…"
   },
   "Legal": {
     "termsNav": "服务条款",
@@ -157,7 +169,7 @@
       },
       "deletion": {
         "title": "第6条（删除）",
-        "body": "如需删除账号及相关数据，请发信至 japankiadm@gmail.com。除法律或防欺诈需要外，我们将删除或匿名化。"
+        "body": "可在购买页面导出或删除账号。导出为个人资料、购买和测验记录的 JSON。删除会移除登录、个人资料和测验记录。购买行会去掉用户 ID 后保留，用于税务和退款核对。访客（匿名）账号也可自行删除。仍可发信 japankiadm@gmail.com。"
       },
       "children": {
         "title": "第7条（儿童）",

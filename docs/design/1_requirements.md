@@ -5,6 +5,7 @@
 > |---|---|---|
 > | v1.0 | 2026-09-19 | 現行実装と PRD v3.2 を突合した as-is 初版 |
 > | v1.1 | 2026-09-21 | Issue #15: `completed_at` と `quiz_answers` を実装 |
+| v1.2 | 2026-09-21 | Issue #20: アカウント削除・データエクスポート |
 
 ---
 
@@ -110,6 +111,7 @@
 - **F-4-4: 衝突時マージ禁止**: 他アカウントに紐づく Identity では自動マージせず、既存ログインを案内する。
 - **F-4-5: プロファイル同期**: `sync_profile` RPC が `is_anonymous` と `preferred_language` を更新。クライアント UPDATE ポリシーは作らない。
 - **F-4-6: オープンリダイレクト防止**: 認証後 `next` は同一オリジンの相対パスのみ許可。
+- **F-4-7: 自己退会とエクスポート**: 認証済み（匿名含む）が `/account` から JSON エクスポートとアカウント削除できる。削除は確認語 `DELETE` が必要。学習データは CASCADE 削除。`user_purchases` は `user_id` SET NULL で残し `stripe_payment_intent_id` は保持。Stripe Customer は email 検索のうえ `customers.del` を best-effort。
 
 ### ⑤ 課金モジュール（都度購入）
 
@@ -128,7 +130,7 @@
 ### ⑦ i18n・法務モジュール
 
 - **F-7-1: ロケール付きルート**: `/{locale}/` 配下。Proxy が next-intl ミドルウェア + Supabase セッション更新を行う。
-- **F-7-2: 利用規約 / プライバシー / 特定商取引法**: `/{locale}/terms`, `/privacy`, `/legal`。文言は `messages/*.json`。
+- **F-7-2: 利用規約 / プライバシー / 特定商取引法**: `/{locale}/terms`, `/privacy`, `/legal`。文言は `messages/*.json`。プライバシーの削除節はアプリ内のエクスポート・退会導線を説明する。
 - **F-7-3: UI JSON の Zod 検証**: 8 言語 + `ja` の messages をテストで検証。
 
 ### ⑧ PWA モジュール

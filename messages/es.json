@@ -80,7 +80,19 @@
     "signInRequired": "Vincula una cuenta para ver compras y facturación.",
     "noCustomer": "No hay cliente de Stripe para este correo. Completa una compra primero.",
     "error": "No se pudo cargar la información de facturación.",
-    "openPack": "Abrir pack"
+    "openPack": "Abrir pack",
+    "privacyTitle": "Tus datos",
+    "privacyBody": "Exporta un JSON de perfil, compras e historial de quiz, o elimina la cuenta. Las cuentas de invitado (anónimas) también pueden borrarse a sí mismas.",
+    "exportData": "Exportar mis datos",
+    "deleteAccount": "Eliminar cuenta",
+    "deleteWarning": "Esto borra de forma permanente el acceso, el perfil y el historial de quiz. Las filas de compra se conservan sin tu user id para impuestos y reembolsos. No se puede deshacer.",
+    "deleteConfirmLabel": "Escribe {confirm} para confirmar",
+    "deleteConfirm": "Eliminar definitivamente",
+    "deleteCancel": "Cancelar",
+    "deleteError": "No se pudo eliminar la cuenta.",
+    "exportError": "No se pudieron exportar los datos.",
+    "exporting": "Exportando…",
+    "deleting": "Eliminando…"
   },
   "Legal": {
     "termsNav": "Términos",
@@ -157,7 +169,7 @@
       },
       "deletion": {
         "title": "6. Supresión",
-        "body": "Para borrar la cuenta, escribe a japankiadm@gmail.com. Eliminaremos o anonimizaremos salvo obligación legal o prevención de fraude."
+        "body": "Puedes exportar o eliminar la cuenta desde la página de Compras. La exportación es un JSON de perfil, compras e historial de quiz. La eliminación quita acceso, perfil y registros de quiz. Las filas de compra se conservan sin user id para impuestos y reembolsos. Las cuentas de invitado (anónimas) también pueden borrarse a sí mismas. Contacto: japankiadm@gmail.com."
       },
       "children": {
         "title": "7. Menores",

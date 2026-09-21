@@ -80,7 +80,19 @@
     "signInRequired": "Link an account to see purchases and billing.",
     "noCustomer": "No Stripe customer was found for this email. Complete a purchase first.",
     "error": "Could not load billing information.",
-    "openPack": "Open pack"
+    "openPack": "Open pack",
+    "privacyTitle": "Your data",
+    "privacyBody": "Export a JSON copy of your profile, purchases, and quiz history, or delete your account. Guest accounts can delete themselves too.",
+    "exportData": "Export my data",
+    "deleteAccount": "Delete account",
+    "deleteWarning": "This permanently deletes your login, profile, and quiz history. Purchase records stay without your user id for tax and refund matching. This cannot be undone.",
+    "deleteConfirmLabel": "Type {confirm} to confirm",
+    "deleteConfirm": "Delete permanently",
+    "deleteCancel": "Cancel",
+    "deleteError": "Could not delete the account.",
+    "exportError": "Could not export your data.",
+    "exporting": "Exporting…",
+    "deleting": "Deleting…"
   },
   "Legal": {
     "termsNav": "Terms",
@@ -157,7 +169,7 @@
       },
       "deletion": {
         "title": "6. Deletion",
-        "body": "To delete your account and related data, email japankiadm@gmail.com. We will delete or anonymize records unless we must keep them for legal or fraud reasons."
+        "body": "You can export or delete your account from the Purchases page. Export downloads JSON of your profile, purchases, and quiz history. Deletion removes your login, profile, and quiz records. Purchase rows are kept without your user id for tax and refund matching. Guest (anonymous) accounts can also delete themselves. You may still email japankiadm@gmail.com."
       },
       "children": {
         "title": "7. Children",

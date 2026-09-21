@@ -80,7 +80,19 @@
     "signInRequired": "Liez un compte pour voir les achats et la facturation.",
     "noCustomer": "Aucun client Stripe pour cet e-mail. Effectuez d’abord un achat.",
     "error": "Impossible de charger les informations de facturation.",
-    "openPack": "Ouvrir le pack"
+    "openPack": "Ouvrir le pack",
+    "privacyTitle": "Vos données",
+    "privacyBody": "Exportez un JSON de votre profil, achats et historique de quiz, ou supprimez le compte. Les comptes invités (anonymes) peuvent aussi se supprimer.",
+    "exportData": "Exporter mes données",
+    "deleteAccount": "Supprimer le compte",
+    "deleteWarning": "Cela supprime définitivement connexion, profil et historique de quiz. Les lignes d’achat restent sans identifiant utilisateur pour la fiscalité et les remboursements. Irréversible.",
+    "deleteConfirmLabel": "Tapez {confirm} pour confirmer",
+    "deleteConfirm": "Supprimer définitivement",
+    "deleteCancel": "Annuler",
+    "deleteError": "Impossible de supprimer le compte.",
+    "exportError": "Impossible d’exporter vos données.",
+    "exporting": "Export…",
+    "deleting": "Suppression…"
   },
   "Legal": {
     "termsNav": "Conditions",
@@ -157,7 +169,7 @@
       },
       "deletion": {
         "title": "6. Suppression",
-        "body": "Pour supprimer le compte, écrivez à japankiadm@gmail.com. Nous supprimons ou anonymisons sauf obligation légale ou lutte contre la fraude."
+        "body": "Vous pouvez exporter ou supprimer le compte depuis la page Achats. L’export est un JSON du profil, des achats et de l’historique de quiz. La suppression retire connexion, profil et enregistrements de quiz. Les lignes d’achat restent sans identifiant utilisateur pour la fiscalité et les remboursements. Les comptes invités (anonymes) peuvent aussi se supprimer. Contact : japankiadm@gmail.com."
       },
       "children": {
         "title": "7. Enfants",
