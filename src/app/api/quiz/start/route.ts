@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { recoveredHeartCount } from "@/lib/hearts/recovery";
+import { toPlayableHearts } from "@/lib/hearts/recovery";
 import { createQuizSession } from "@/lib/quiz/rpc-client";
 import {
   StartQuizBodySchema,
@@ -84,13 +84,10 @@ async function createStartQuizLoader(
       if (typeof data.hearts !== "number" || !updatedAt) {
         throw new Error("Heart state was not returned");
       }
-      return {
-        remainingHearts: recoveredHeartCount({
-          storedHearts: data.hearts,
-          lastHeartUpdatedAt: updatedAt,
-        }),
+      return toPlayableHearts({
+        remainingHearts: data.hearts,
         updatedAt,
-      };
+      });
     },
   };
 }

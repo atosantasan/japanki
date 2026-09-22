@@ -73,3 +73,67 @@ describe("canPlayWithHearts", () => {
     expect(canPlayWithHearts(1)).toBe(true);
   });
 });
+
+describe("toPlayableHearts", () => {
+  it("recovers stored 0 after 150 minutes so a correct grade stays playable", async () => {
+    const { canPlayWithHearts, recoverHearts, toPlayableHearts } = await import(
+      "@/lib/hearts/recovery"
+    );
+    const lastHeartUpdatedAt = "2026-09-21T12:00:00.000Z";
+    const now = new Date("2026-09-21T15:00:00.000Z");
+
+    const playable = toPlayableHearts({
+      remainingHearts: 0,
+      updatedAt: lastHeartUpdatedAt,
+      now,
+    });
+
+    expect(playable.remainingHearts).toBe(5);
+    expect(canPlayWithHearts(playable.remainingHearts)).toBe(true);
+    expect(
+      recoverHearts({
+        storedHearts: playable.remainingHearts,
+        lastHeartUpdatedAt: new Date(playable.updatedAt),
+        now,
+      }).hearts,
+    ).toBe(5);
+  });
+
+  it("does not double-count an already-consumed remaining value", async () => {
+    const { toPlayableHearts } = await import("@/lib/hearts/recovery");
+    const updatedAt = "2026-09-21T15:00:00.000Z";
+    const now = new Date("2026-09-21T15:00:01.000Z");
+
+    const playable = toPlayableHearts({
+      remainingHearts: 4,
+      updatedAt,
+      now,
+    });
+
+    expect(playable.remainingHearts).toBe(4);
+    expect(playable.updatedAt).toBe(new Date(updatedAt).toISOString());
+  });
+
+  it("keeps a partial refill aligned with header recoverHearts", async () => {
+    const { recoverHearts, toPlayableHearts } = await import(
+      "@/lib/hearts/recovery"
+    );
+    const lastHeartUpdatedAt = "2026-09-21T12:00:00.000Z";
+    const now = new Date("2026-09-21T12:45:00.000Z");
+
+    const playable = toPlayableHearts({
+      remainingHearts: 2,
+      updatedAt: lastHeartUpdatedAt,
+      now,
+    });
+
+    expect(playable.remainingHearts).toBe(3);
+    expect(
+      recoverHearts({
+        storedHearts: playable.remainingHearts,
+        lastHeartUpdatedAt: new Date(playable.updatedAt),
+        now,
+      }).hearts,
+    ).toBe(3);
+  });
+});

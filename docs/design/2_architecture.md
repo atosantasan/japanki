@@ -135,7 +135,7 @@ graph LR
 
 1. 教材の正本は DB。UI は `messages/*.json`。
 2. 5 問の集合は RPC が INSERT した `quiz_session_questions` が正。クライアントは並べ替えて表示するだけ。
-3. 正誤判定の正は `submit_answer`。誤答時のハート減算の正は内部の `consume_heart`。UI の `recoverHearts` は表示用。
+3. 正誤判定の正は `submit_answer`。ハート減算の正は `create_quiz_session` の開始成功時1回。UI の `recoverHearts` は表示用。
 4. 購入の正は Webhook → `grantPurchase`。Success URL は案内のみ。
 
 ---
@@ -191,7 +191,7 @@ graph TD
 | **API** | `POST /api/account/delete` | `deleteUser`。Stripe Customer 削除は best-effort |
 | **Auth CB** | `GET /auth/callback` | OAuth/OTP の code 交換。`sync_profile` を試行 |
 | **Context** | `src/components/auth/AuthProvider.tsx` | 匿名 boot、連携モーダル、所有パック、自動 Checkout |
-| **クイズ UI** | `src/components/quiz/QuizPlay.tsx` | セッション開始、出題、音声、誤答時ハート |
+| **クイズ UI** | `src/components/quiz/QuizPlay.tsx` | セッション開始時に1ハート、出題、音声 |
 | **RPC クライアント** | `src/lib/quiz/rpc-client.ts` | `create_quiz_session` / `consume_heart` / `submit_answer` |
 | **出題** | `src/lib/quiz/build-queue.ts` 等 | 5問検証、シャッフル、正誤 |
 | **課金** | `src/lib/billing/*` | ガード、所有判定、Webhook、Portal |

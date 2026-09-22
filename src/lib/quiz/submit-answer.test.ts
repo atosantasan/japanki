@@ -163,8 +163,13 @@ describe("submitAnswerForRequest", () => {
     expect(result.body.correctChoiceText).toBe("Yes");
   });
 
-  it("rejects grading when remaining hearts are 0", async () => {
-    const submitAnswer = vi.fn();
+  it("grades an in-progress session when remaining hearts are 0", async () => {
+    const submitAnswer = vi.fn().mockResolvedValue({
+      isCorrect: true,
+      remainingHearts: 0,
+      updatedAt: "2026-09-19T00:00:00Z",
+      correctChoiceText: "Yes",
+    });
     const result = await submitAnswerForRequest(
       {
         sessionId,
@@ -183,8 +188,8 @@ describe("submitAnswerForRequest", () => {
       },
     );
 
-    expect(result.status).toBe(403);
-    expect(submitAnswer).not.toHaveBeenCalled();
+    expect(result.status).toBe(200);
+    expect(submitAnswer).toHaveBeenCalledWith(sessionId, phraseId, "Yes", "en");
   });
 
   it("returns 409 invalid_choice when submit_answer rejects an unknown choice", async () => {
@@ -363,6 +368,15 @@ describe("submit-answer latency", () => {
     expect(source).not.toMatch(/consumeRateLimit/);
     expect(source).toMatch(/RATE_LIMIT_EXCEEDED_ERROR/);
     expect(source).toMatch(/loader\.submitAnswer/);
+  });
+
+  it("normalizes RPC remaining hearts with toPlayableHearts before the client stores them", () => {
+    const source = readFileSync(
+      join(srcDir, "app/api/quiz/submit-answer/route.ts"),
+      "utf8",
+    );
+    expect(source).toMatch(/toPlayableHearts/);
+    expect(source).toMatch(/remainingHearts/);
   });
 
   it("warms quiz APIs from the shared layout helper", () => {

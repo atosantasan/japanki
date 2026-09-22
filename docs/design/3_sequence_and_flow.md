@@ -152,8 +152,12 @@ sequenceDiagram
     else フレーズ 5 未満
         RPC-->>UI: Not enough phrases...
         UI-->>User: startError
+    else 回復後 hearts < 1
+        RPC-->>UI: No hearts remaining
+        UI-->>User: heartsEmpty
     else OK
         RPC->>DB: quiz_sessions + ランダム5問 INSERT
+        RPC->>DB: hearts - 1
         RPC-->>UI: session_id
         UI->>API: pack_id
         API->>API: getUser / getPack / hasPurchase / Zod
@@ -168,7 +172,7 @@ sequenceDiagram
             alt 正解
                 UI-->>User: Correct
             else 誤答
-                UI-->>User: Incorrect（ハートは RPC 内 consume_heart）
+                UI-->>User: Incorrect（ハートは減らない）
             end
             User->>UI: Next
         end
@@ -180,33 +184,33 @@ sequenceDiagram
 
 ---
 
-## 4. ハート減算（アトミック）
+## 4. ハート減算（開始時・アトミック）
 
 ```mermaid
 sequenceDiagram
     autonumber
     participant UI as QuizPlay
-    participant RPC as consume_heart
-    participant DB as profiles / quiz_attempts
+    participant RPC as create_quiz_session
+    participant DB as profiles / quiz_sessions
 
-    UI->>RPC: session_id, phrase_id
-    RPC->>RPC: auth.uid()
-    RPC->>DB: セッション所有者 = uid か
-    RPC->>DB: phrase が session に割当済みか
-    RPC->>DB: INSERT quiz_attempts ON CONFLICT DO NOTHING RETURNING id
-    alt RETURNING なし（2回目以降）
-        RPC-->>UI: 現状の hearts（減算なし）
-    else 初回誤答
-        RPC->>DB: profiles FOR UPDATE
-        RPC->>RPC: 30分回復を加算（上限5）
-        alt 回復後 hearts > 0
+    UI->>RPC: pack_id
+    RPC->>RPC: auth.uid() / パック権限 / レート制限
+    RPC->>DB: profiles FOR UPDATE
+    RPC->>RPC: 30分回復を加算（上限5）
+    alt 回復後 hearts < 1
+        RPC-->>UI: No hearts remaining（セッション未作成）
+    else 回復後 hearts >= 1
+        RPC->>DB: quiz_sessions + ランダム5問 INSERT
+        alt 5問未満
+            RPC-->>UI: 例外（ロールバック。ハートは減らない）
+        else 5問確定
             RPC->>DB: hearts - 1
+            RPC-->>UI: session_id
         end
-        RPC-->>UI: remaining_hearts, updated_at
     end
 ```
 
-クライアントの `recoverHearts` はヘッダー表示用であり、減算の正本ではない。
+正答・誤答の `submit_answer` はハートを減算しない。開始済みの5問は残り 0 でも解答できる。クライアントの `recoverHearts` はヘッダー表示用であり、減算の正本ではない。
 
 ---
 

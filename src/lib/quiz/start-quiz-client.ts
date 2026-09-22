@@ -1,6 +1,23 @@
 import type { StartQuizBody, StartQuizResult } from "@/lib/quiz/start-quiz";
 
-export async function requestStartQuiz(
+const inflightStarts = new Map<string, Promise<StartQuizResult>>();
+
+export function requestStartQuiz(
+  input: StartQuizBody,
+): Promise<StartQuizResult> {
+  const key = `${input.packId}\0${input.locale}`;
+  const existing = inflightStarts.get(key);
+  if (existing) {
+    return existing;
+  }
+  const pending = postStartQuiz(input).finally(() => {
+    inflightStarts.delete(key);
+  });
+  inflightStarts.set(key, pending);
+  return pending;
+}
+
+async function postStartQuiz(
   input: StartQuizBody,
 ): Promise<StartQuizResult> {
   const response = await fetch("/api/quiz/start", {

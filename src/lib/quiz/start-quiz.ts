@@ -1,5 +1,8 @@
 import { z } from "zod";
-import { RATE_LIMIT_EXCEEDED_ERROR } from "@/lib/constants/app";
+import {
+  NO_HEARTS_REMAINING_ERROR,
+  RATE_LIMIT_EXCEEDED_ERROR,
+} from "@/lib/constants/app";
 import { buildQuizQueue } from "@/lib/quiz/build-queue";
 import { prepareQuestion, type PreparedQuestion } from "@/lib/quiz/prepare-question";
 import type { ConsumeHeartResult } from "@/lib/quiz/rpc-client";
@@ -56,6 +59,9 @@ export async function startQuizForRequest(
     }
     if (message.includes("Content pack not found")) {
       return { status: 404, body: { error: message } };
+    }
+    if (message.includes(NO_HEARTS_REMAINING_ERROR)) {
+      return { status: 403, body: { error: NO_HEARTS_REMAINING_ERROR } };
     }
     if (message.includes(RATE_LIMIT_EXCEEDED_ERROR)) {
       return { status: 429, body: { error: RATE_LIMIT_EXCEEDED_ERROR } };

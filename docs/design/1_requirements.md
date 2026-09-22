@@ -86,16 +86,16 @@
 - **F-1-2: 不足パックの拒否**: パック内フレーズが 5 未満ならセッションを作らず例外でロールバックする（AC-QUIZ-06）。
 - **F-1-3: 有料パック権限**: 有料パックは `user_purchases` に本人レコードがなければ RPC が例外を返す（AC-QUIZ-07）。
 - **F-1-4: 表示時シャッフルとサーバー採点**: 3 択は表示時にシャッフルする（`shuffleChoiceOrder`）。正誤判定はクライアント比較ではなく、選択テキストを `POST /api/quiz/submit-answer`（または `submit_answer` RPC）に送りサーバー側で行う。`POST /api/quiz/start` と `GET /api/phrases` は `correct_choice_index` / `correctChoiceText` を返さない。
-- **F-1-5: 完了演出**: 5 問終了後に「1-minute complete!」相当の完了画面を出す。`submit_answer` が割当済みの `quiz_session_questions` 件数と `quiz_answers` 件数が一致したとき `quiz_sessions.completed_at` を now() で更新する（Issue #15 / `011`）。正誤は `quiz_answers` に残る。`quiz_attempts` は初回誤答・ハート減算の重複防止専用のまま。
+- **F-1-5: 完了演出**: 5 問終了後に「1-minute complete!」相当の完了画面を出す。`submit_answer` が割当済みの `quiz_session_questions` 件数と `quiz_answers` 件数が一致したとき `quiz_sessions.completed_at` を now() で更新する（Issue #15 / `011`）。正誤は `quiz_answers` に残る。ハート消費は完了判定とは別で、開始成功時の1回だけ（Issue #52）。
 
 ### ② ハートモジュール
 
 - **F-2-1: 初期値 5 / 上限 5**: `profiles.hearts` は 0〜5。
-- **F-2-2: 初回誤答のみ減算**: `consume_heart(session_id, phrase_id)` が `INSERT ... ON CONFLICT DO NOTHING RETURNING id` で初回誤答だけ減算する（AC-QUIZ-05）。
-- **F-2-3: 未割当フレーズ拒否**: セッションに無い `phrase_id` は例外（AC-QUIZ-04）。
-- **F-2-4: 所有権検証**: セッション `user_id` が `auth.uid()` と一致しない場合は拒否。
-- **F-2-5: 自然回復**: 30 分で 1 回復（RPC 内計算 + クライアント表示 `recoverHearts`）。満タン時はカウントダウンなし。
-- **F-2-6: 0 ハート時**: 回復後の表示ハートが 0 なら解答できない（UI で選択肢を止め、採点 API も 403）。RPC は 0 未満にしない。
+- **F-2-2: 開始成功時に1減算**: 5問のセッション確定に成功したとき、`create_quiz_session` がハートをちょうど1つ消費する（Issue #52 / AC-QUIZ-05）。正答・誤答では消費しない。減算前に30分単位の自然回復を反映する。失敗（未認証、未購入、5問未満、ハート不足、レート制限）では消費せずロールバックする。
+- **F-2-3: 未割当フレーズ拒否**: セッションに無い `phrase_id` の採点は例外。採点ではハートは減らない。
+- **F-2-4: 所有権検証**: セッション `user_id` が `auth.uid()` と一致しない場合は拒否。ハート減算は本人の `profiles` 行を `FOR UPDATE` してから行う。
+- **F-2-5: 自然回復**: 30 分で 1 回復（RPC 内計算 + クライアント表示 `recoverHearts`）。満タン時はカウントダウンなし。上限は 5。
+- **F-2-6: 0 ハート時**: 回復後の残りが 0 なら開始できない（UI は開始せず、`create_quiz_session` は `No hearts remaining` でセッションを作らない）。開始に成功したセッションは、開始後の残りが 0 でも割り当て済みの5問を解答できる。
 
 ### ③ 音声モジュール
 
@@ -160,8 +160,8 @@
 | AC-QUIZ-01 | 1 セッションにサーバー確定の重複なし 5 `phrase` |
 | AC-QUIZ-02 | 同一セッションで同じ phrase を複数回出題しない |
 | AC-QUIZ-03 | 選択パック以外の問題を含めない |
-| AC-QUIZ-04 | 未割当 phrase の `consume_heart` は例外で拒否 |
-| AC-QUIZ-05 | 同一セッション同一問題の 2 回目以降誤答ではハート減算しない |
+| AC-QUIZ-04 | 回復後ハートが 0 なら `create_quiz_session` はセッションを作らず例外 |
+| AC-QUIZ-05 | 開始成功 1 回につきハートをちょうど 1 つ減算する。正答・誤答では減算しない |
 | AC-QUIZ-06 | 5 件未満ならセッション未作成でロールバック |
 | AC-QUIZ-07 | 有料パックは本人の `user_purchases` が無ければ RPC 例外 |
 
@@ -174,6 +174,6 @@
 | フレーズ音声ファイル `public/audio/*.mp3` | 未配置。生成トーンへフォールバック |
 | PWA アイコン `/icon-192.png`, `/icon-512.png` | Manifest が参照。リポジトリ `public/` には未配置。テストでパス規約を検証 |
 | `profiles.last_x_shared_at` | スキーマのみ。X シェア回復は未実装 |
-| ハート 0 での解答ロック | 回復後ハートが 0 なら解答不可（UI + 採点 API） |
+| ハート 0 での開始ロック | 回復後ハートが 0 なら開始不可。開始済みの5問は解答できる（Issue #52） |
 | オフラインでの新規セッション | 不可（RPC / API 必須） |
 | Webhook と Success のレース | Success 直後のクイズ開始が未購入扱いになり得る |

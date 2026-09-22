@@ -11,16 +11,25 @@ const quizPlayPath = join(
 describe("QuizPlay hearts empty warning", () => {
   const source = readFileSync(quizPlayPath, "utf8");
 
-  it("locks answering from remaining hearts instead of a raw stored zero", () => {
-    expect(source).toMatch(/canPlayWithHearts/);
+  it("blocks quiz start when recovered hearts are empty", () => {
+    expect(source).toMatch(/canPlayWithHearts\(playableHearts\)/);
+    expect(source).toMatch(/setErrorKey\("heartsEmpty"\)/);
+    expect(source).toMatch(/NO_HEARTS_REMAINING_ERROR/);
     expect(source).not.toMatch(/hearts === 0 && feedback/);
   });
 
-  it("disables answer buttons when remaining hearts are empty", () => {
+  it("keeps answer buttons enabled after the session heart is spent", () => {
     expect(source).toMatch(
-      /disabled=\{\s*Boolean\(feedback\) \|\| submitting \|\| !canPlayWithHearts\(hearts\)\s*\}/,
+      /disabled=\{\s*Boolean\(feedback\) \|\| submitting\s*\}/,
     );
-    expect(source).toMatch(/!canPlayWithHearts\(hearts\)/);
+    expect(source).not.toMatch(/!canPlayWithHearts\(hearts\)/);
+  });
+
+  it("checks recovered hearts before starting", () => {
+    expect(source).toMatch(/recoveredHeartCount/);
+    expect(source).toMatch(
+      /recoveredHeartCount\(\{\s*storedHearts:\s*currentProfile\?\.hearts \?\? 5,\s*lastHeartUpdatedAt:\s*currentProfile\?\.lastHeartUpdatedAt,/,
+    );
   });
 
   it("surfaces submitAnswer failures instead of swallowing them", () => {

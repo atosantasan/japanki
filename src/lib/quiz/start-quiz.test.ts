@@ -99,6 +99,26 @@ describe("startQuizForRequest", () => {
     expect(result.body).toEqual({ error: "Content pack not found" });
   });
 
+  it("returns 403 when create_quiz_session reports no hearts remaining", async () => {
+    const loadAssigned = vi.fn();
+    const result = await startQuizForRequest(
+      { packId: "survival", locale: "en" },
+      {
+        getUser: vi.fn().mockResolvedValue({ id: "user-1" }),
+        createSession: vi
+          .fn()
+          .mockRejectedValue(new Error("No hearts remaining")),
+        loadAssigned,
+        loadPhrases: vi.fn(),
+        getHearts: vi.fn(),
+      },
+    );
+
+    expect(result.status).toBe(403);
+    expect(result.body).toEqual({ error: "No hearts remaining" });
+    expect(loadAssigned).not.toHaveBeenCalled();
+  });
+
   it("returns 429 when create_quiz_session is rate limited", async () => {
     const loadAssigned = vi.fn();
     const result = await startQuizForRequest(
@@ -162,6 +182,15 @@ describe("startQuizForRequest", () => {
 });
 
 describe("quiz start API", () => {
+  it("returns recovered hearts with a timestamp that does not double-count", () => {
+    const source = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), "../../app/api/quiz/start/route.ts"),
+      "utf8",
+    );
+    expect(source).toMatch(/toPlayableHearts/);
+    expect(source).toMatch(/applyHeartRecovery|toPlayableHearts/);
+  });
+
   it("loads assignment, phrases, and hearts in one Promise.all after session create", () => {
     const source = readFileSync(
       join(dirname(fileURLToPath(import.meta.url)), "start-quiz.ts"),
@@ -171,5 +200,48 @@ describe("quiz start API", () => {
     expect(source).toMatch(/createSession/);
     expect(source).not.toMatch(/gradeSelectedChoice/);
     expect(source).not.toMatch(/correctChoiceText/);
+  });
+});
+
+describe("requestStartQuiz in-flight dedupe", () => {
+  const input = { packId: "survival", locale: "en" as const };
+  const payload = {
+    sessionId: "sess-1",
+    remainingHearts: 4,
+    updatedAt: "2026-09-22T00:00:00Z",
+    questions: [{}, {}, {}, {}, {}],
+  };
+
+  it("shares one request while the same start is in flight", async () => {
+    const { requestStartQuiz } = await import("@/lib/quiz/start-quiz-client");
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => payload,
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const [first, second] = await Promise.all([
+      requestStartQuiz(input),
+      requestStartQuiz(input),
+    ]);
+
+    expect(first).toEqual(second);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    vi.unstubAllGlobals();
+  });
+
+  it("starts again after the previous request settles", async () => {
+    const { requestStartQuiz } = await import("@/lib/quiz/start-quiz-client");
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => payload,
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await requestStartQuiz(input);
+    await requestStartQuiz(input);
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    vi.unstubAllGlobals();
   });
 });

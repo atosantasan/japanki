@@ -177,7 +177,8 @@ begin
 end;
 $$ language plpgsql security definer set search_path = public;
 
--- 7. RPC: 競合を完全に回避しRETURNINGで確実なアトミック判定を行うハート減算関数
+-- 7. RPC: 初期実装のハート減算関数。現行仕様は Issue #52 / migration 014。
+-- 開始成功時に1つ消費し、この関数は減算しない。
 create or replace function public.consume_heart(session_id_param uuid, phrase_id_param uuid)
 returns table(remaining_hearts integer, updated_at timestamp with time zone) as $$
 declare
@@ -289,8 +290,10 @@ create policy "ユーザーは自身の購入履歴のみ閲覧可能" on public
 ### 1. サーバー主導のクイズセッション ＆ ハート管理
 
 - クライアントは RPC `create_quiz_session(pack_id)` を呼び出し。有料パックの権限チェックを通過後、サーバー側で確定された5問の `session_id` を受け取る。
-- ハート減算は `consume_heart(session_id, phrase_id)` を呼び出し。内部で `INSERT ... ON CONFLICT DO NOTHING RETURNING id` により競合条件および状態判定の誤動作を排除。
-- セッションに割り当てられていない `phrase_id` に対するハート減算要求は例外を出して拒否。
+- ハートはクイズ開始の成功時に 1 つ消費する（5問1セットにつき1）。`create_quiz_session` が5問の割り当てに成功した同一トランザクションで、回復を反映したうえで 1 減算する（Issue #52）。
+- 回復後の残りが 0 のときはセッションを作らず `No hearts remaining` で拒否する。開始失敗（未購入、5問未満、レート制限を含む）では消費しない。
+- 正答・誤答ではハートを消費しない。開始済みセッションは残り 0 でも5問を解答できる。
+- `consume_heart` は減算しない。直接呼び出してもハートは減らない。
 
 ### 2. 有料コンテンツ（Phrases）のアクセス保護
 

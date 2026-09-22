@@ -65,7 +65,7 @@ describe("Issue #17: submit_answer hourly rate limit", () => {
 
   it("inserts a submit_answer_calls row after grading, regardless of correctness", () => {
     expect(sql).toMatch(
-      /if\s+not\s+v_is_correct then[\s\S]*consume_heart[\s\S]*else[\s\S]*from\s+public\.profiles[\s\S]*end if;[\s\S]*insert\s+into\s+public\.submit_answer_calls\s*\(\s*user_id\s*,\s*called_at\s*\)/i,
+      /if\s+not\s+v_is_correct then[\s\S]*from\s+public\.profiles[\s\S]*else[\s\S]*from\s+public\.profiles[\s\S]*end if;[\s\S]*insert\s+into\s+public\.submit_answer_calls\s*\(\s*user_id\s*,\s*called_at\s*\)/i,
     );
     expect(sql).toMatch(
       /insert\s+into\s+public\.submit_answer_calls[\s\S]*return query/i,

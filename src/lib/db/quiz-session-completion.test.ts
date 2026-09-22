@@ -101,6 +101,6 @@ describe("Issue #15: quiz_answers and session completion", () => {
       /on conflict \(session_id, phrase_id\) do nothing/i,
     );
     expect(consumeSql).toMatch(/returning id into v_attempt_id/i);
-    expect(sql).toMatch(/from public\.consume_heart\(session_id_param, phrase_id_param\)/);
+    expect(sql).not.toMatch(/consume_heart/i);
   });
 });
