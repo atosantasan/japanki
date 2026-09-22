@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { submitAnswer } from "@/lib/quiz/rpc-client";
-import { recoveredHeartCount } from "@/lib/hearts/recovery";
+import { recoveredHeartCount, toPlayableHearts } from "@/lib/hearts/recovery";
 import {
   SubmitAnswerBodySchema,
   submitAnswerForRequest,
@@ -98,7 +98,7 @@ async function createSubmitAnswerLoader(
       };
     },
     async submitAnswer(sessionId, phraseId, selectedChoiceText, locale) {
-      return submitAnswer(
+      const result = await submitAnswer(
         {
           rpc: (fn, args) => userClient.rpc(fn, args),
         },
@@ -107,6 +107,15 @@ async function createSubmitAnswerLoader(
         selectedChoiceText,
         locale,
       );
+      const playable = toPlayableHearts({
+        remainingHearts: result.remainingHearts,
+        updatedAt: result.updatedAt,
+      });
+      return {
+        ...result,
+        remainingHearts: playable.remainingHearts,
+        updatedAt: playable.updatedAt,
+      };
     },
   };
 }

@@ -12,9 +12,12 @@ import {
   playWebAudioFallback,
 } from "@/lib/quiz/phrase-audio";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
-import { canPlayWithHearts } from "@/lib/hearts/recovery";
+import { canPlayWithHearts, recoveredHeartCount } from "@/lib/hearts/recovery";
 import type { SupportedLocale } from "@/lib/i18n/locales";
-import { INVALID_CHOICE_ERROR } from "@/lib/constants/app";
+import {
+  INVALID_CHOICE_ERROR,
+  NO_HEARTS_REMAINING_ERROR,
+} from "@/lib/constants/app";
 import type { PreparedQuestion } from "@/lib/quiz/prepare-question";
 
 type QuizPlayProps = {
@@ -38,10 +41,11 @@ export function QuizPlay({ packId }: QuizPlayProps) {
     | "notConfigured"
     | "paidLocked"
     | "startError"
+    | "heartsEmpty"
     | "invalidChoice"
     | null
   >(configured ? null : "notConfigured");
-  const [hearts, setHearts] = useState(profile?.hearts ?? 5);
+  const profileRef = useRef(profile);
   const [queue, setQueue] = useState<PreparedQuestion[]>([]);
   const [index, setIndex] = useState(0);
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -61,6 +65,10 @@ export function QuizPlay({ packId }: QuizPlayProps) {
   const complete = !loading && !errorKey && queue.length === 5 && index >= 5;
 
   useEffect(() => {
+    profileRef.current = profile;
+  }, [profile]);
+
+  useEffect(() => {
     if (authLoading) {
       return;
     }
@@ -77,13 +85,25 @@ export function QuizPlay({ packId }: QuizPlayProps) {
         return;
       }
 
+      const currentProfile = profileRef.current;
+      const playableHearts = recoveredHeartCount({
+        storedHearts: currentProfile?.hearts ?? 5,
+        lastHeartUpdatedAt: currentProfile?.lastHeartUpdatedAt,
+      });
+      if (!canPlayWithHearts(playableHearts)) {
+        if (!cancelled) {
+          setErrorKey("heartsEmpty");
+          setLoading(false);
+        }
+        return;
+      }
+
       const applyStart = (started: {
         remainingHearts: number;
         updatedAt: string;
         sessionId: string;
         questions: PreparedQuestion[];
       }) => {
-        setHearts(started.remainingHearts);
         updateHearts(started.remainingHearts, started.updatedAt);
         setSessionId(started.sessionId);
         setQueue(started.questions);
@@ -107,6 +127,10 @@ export function QuizPlay({ packId }: QuizPlayProps) {
             if (!cancelled) {
               setErrorKey("paidLocked");
             }
+          }
+        } else if (message.includes(NO_HEARTS_REMAINING_ERROR)) {
+          if (!cancelled) {
+            setErrorKey("heartsEmpty");
           }
         } else if (!cancelled) {
           setErrorKey("startError");
@@ -173,8 +197,7 @@ export function QuizPlay({ packId }: QuizPlayProps) {
         !current ||
         !sessionId ||
         feedback ||
-        submittingRef.current ||
-        !canPlayWithHearts(hearts)
+        submittingRef.current
       ) {
         return;
       }
@@ -195,7 +218,6 @@ export function QuizPlay({ packId }: QuizPlayProps) {
           });
           setFeedback(result.isCorrect ? "correct" : "incorrect");
           setRevealedCorrectText(result.correctChoiceText);
-          setHearts(result.remainingHearts);
           updateHearts(result.remainingHearts, result.updatedAt);
         } catch (error) {
           const message = error instanceof Error ? error.message : "";
@@ -209,7 +231,7 @@ export function QuizPlay({ packId }: QuizPlayProps) {
         }
       })();
     },
-    [current, feedback, hearts, locale, sessionId, updateHearts],
+    [current, feedback, locale, sessionId, updateHearts],
   );
 
   const goNext = useCallback(() => {
@@ -297,9 +319,6 @@ export function QuizPlay({ packId }: QuizPlayProps) {
               </button>
             </div>
           ) : null}
-          {!canPlayWithHearts(hearts) && feedback !== "incorrect" ? (
-            <p className="mt-6 text-sm text-sun">{t("heartsEmpty")}</p>
-          ) : null}
           {submitError ? (
             <p className="mt-6 text-sm text-sun">{t("gradeError")}</p>
           ) : null}
@@ -312,7 +331,7 @@ export function QuizPlay({ packId }: QuizPlayProps) {
                   key={choice}
                   type="button"
                   disabled={
-                    Boolean(feedback) || submitting || !canPlayWithHearts(hearts)
+                    Boolean(feedback) || submitting
                   }
                   onClick={() => void onChoose(choiceIndex)}
                   className={`rounded-2xl border px-5 py-4 text-left text-lg transition ${

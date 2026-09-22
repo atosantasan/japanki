@@ -161,8 +161,8 @@ create policy "ユーザーは自身の購入履歴のみ閲覧可能" on public
 
 1. サーバー主導のクイズセッション ＆ ハート管理
 ・クライアントは RPC `create_quiz_session(pack_id)` を呼び出し。有料パックの権限チェックを通過後、サーバー側で確定された5問の `session_id` を受け取る。
-・ハート減算は `consume_heart(session_id, phrase_id)` を呼び出し。内部で `INSERT ... ON CONFLICT DO NOTHING RETURNING id` により競合条件および状態判定の誤動作を排除。
-・セッションに割り当てられていない `phrase_id` に対するハート減算要求は例外を出して拒否。
+・ハートはクイズ開始の成功時に 1 つ消費する（5問1セットにつき1）。`create_quiz_session` が5問の割り当て成功と同一トランザクションで 1 減算する（Issue #52）。
+・回復後の残りが 0 のときはセッションを作らず拒否する。正答・誤答では消費しない。`consume_heart` は減算しない。
 2. 有料コンテンツ（Phrases）のアクセス保護
 ・有料パックの問題データ（`phrases`）は RLS により直接SELECTを遮断。
 ・API Route（`/api/phrases?pack_id=xxx`）を用意し、サーバー側で `SUPABASE_SECRET_KEY` を使用して `user_purchases` に購入記録が存在するか検証した上でデータを返却。
@@ -277,8 +277,8 @@ AIエージェントは単にコードを書くだけではなく、以下の 8 
 * [ ] 4. `/api/phrases` は対象有料パックの購入権限 (`user_purchases`) を検証していること。
 * [ ] 5. Stripe Webhook は `STRIPE_WEBHOOK_SECRET` による署名検証を行っていること。
 * [ ] 6. Success URL やフロントエンドからのリクエストのみで購入権限を付与していないこと（Webhook経由のみ）。
-* [ ] 7. RPC (`create_quiz_session`, `consume_heart`) は内部で `auth.uid()` を使用していること。
-* [ ] 8. RPC (`consume_heart`) は `quiz_sessions` の所有権 (`user_id = auth.uid()`) およびセッションへの割り当てを検証していること。
+* [ ] 7. RPC (`create_quiz_session`, `consume_heart`) は内部で `auth.uid()` を使用していること。ハート減算は `create_quiz_session` が本人の `profiles` を更新する。
+* [ ] 8. RPC (`create_quiz_session`) は回復後ハートが 0 のときセッションを作らず、5問の割り当て成功後に同一トランザクションでハートを1つだけ減算すること。`consume_heart` は減算しない。
 * [ ] 9. クライアントから `quiz_attempts` や `quiz_session_questions` へ直接 INSERT できないよう RLS で保護されていること（INSERT ポリシー未定義）。
 * [ ] 10. 他ユーザーの `user_purchases` や `profiles` 情報を取得・変更できないこと。
 * [ ] 11. 教材（Phrases）の8言語辞書データの投入時は、Zod スキーマで全言語キーの存在を検証し、人間による翻訳レビューを通していること。
@@ -290,7 +290,7 @@ AIエージェントは単にコードを書くだけではなく、以下の 8 
 * **AC-QUIZ-01**: 1つのセッションには、サーバー側で確定された重複のない正確に5つの `phrase` が割り当てられること。
 * **AC-QUIZ-02**: 同一セッション内で同じ問題（`phrase`）が複数回出題されないこと。
 * **AC-QUIZ-03**: 選択されたパック以外の問題がセッションに含まれないこと。
-* **AC-QUIZ-04**: セッションに割り当てられていない `phrase` に対して `consume_heart` を実行した場合、例外を出してハート消費を拒否すること。
-* **AC-QUIZ-05**: 同一セッション内の同一問題における2回目以降の誤答では、ハートが減算されないこと（`INSERT ... ON CONFLICT DO NOTHING RETURNING id` による保護）。
+* **AC-QUIZ-04**: 回復後のハートが 0 のとき `create_quiz_session` はセッションを作成せず例外を返すこと。
+* **AC-QUIZ-05**: 開始成功 1 回につきハートをちょうど 1 つ減算すること。正答・誤答では減算しないこと。
 * **AC-QUIZ-06**: 選択されたパックに5件未満の `phrase` しか存在しない場合、`create_quiz_session` はセッションを作成せず例外を返してロールバックすること。
 * **AC-QUIZ-07**: 有料パックの場合、`user_purchases` に本人の購入記録が存在しないユーザーは `create_quiz_session` を実行できず例外を返すこと。

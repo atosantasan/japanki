@@ -156,7 +156,7 @@ erDiagram
 | `last_x_shared_at` | timestamptz | nullable | 将来の X シェア回復用。アプリ未使用 |
 | `created_at` | timestamptz | | 作成日時 |
 
-クライアントは SELECT のみ（自分の行）。更新は `sync_profile` / `consume_heart`。
+クライアントは SELECT のみ（自分の行）。更新は `sync_profile` / `create_quiz_session`（開始時の1減算）/ 正答時の回復書き戻し。
 
 ### 3-2. `content_packs`
 
@@ -204,11 +204,11 @@ Zod（`PhraseRecordSchema`）は教材検証用に 8 言語キーと 3 択タプ
 
 ### 3-6. `quiz_attempts`
 
-同一 (`session_id`, `phrase_id`) は 1 行。初回誤答時刻のみ保持。SELECT ポリシーなし（クライアントは読めない）。INSERT は `consume_heart` / `submit_answer` のみ。`session_id` は quiz_sessions ON DELETE CASCADE、`phrase_id` は phrases ON DELETE RESTRICT（ハート減算履歴を保持するためフレーズ物理削除を拒否）。
+同一 (`session_id`, `phrase_id`) は 1 行。初期実装では初回誤答の記録だった。Issue #52 以降、開始時のハート消費は `quiz_attempts` を使わない。SELECT ポリシーなし（クライアントは読めない）。`session_id` は quiz_sessions ON DELETE CASCADE、`phrase_id` は phrases ON DELETE RESTRICT。
 
 | 制約 | 意味 |
 |---|---|
-| UNIQUE (`session_id`, `phrase_id`) `quiz_attempts_session_id_phrase_id_key` | AC-QUIZ-05。`ON CONFLICT (session_id, phrase_id) DO NOTHING` の対象 |
+| UNIQUE (`session_id`, `phrase_id`) `quiz_attempts_session_id_phrase_id_key` | 同一セッション・同一問題の attempt 行は1つ。ハート消費の判定には使わない（Issue #52） |
 
 ### 3-7. `user_purchases`
 
@@ -226,7 +226,7 @@ UNIQUE (`user_id`, `pack_id`) が Webhook 再送の冪等キー（PostgreSQL は
 
 ### 3-9. `quiz_answers`
 
-正誤ログ（分析用）。`quiz_attempts` は初回誤答・ハート減算の重複防止専用のまま。同一 (`session_id`, `phrase_id`) は 1 行。`Invalid choice` など判定前例外では INSERT しない。SELECT ポリシーなし。`session_id` は quiz_sessions ON DELETE CASCADE、`phrase_id` は phrases ON DELETE RESTRICT。分析用ビューは作らない（ダッシュボード未実装。集計は `quiz_answers` + `quiz_sessions` から後で組める）。
+正誤ログ（分析用）。ハート消費とは独立。同一 (`session_id`, `phrase_id`) は 1 行。`Invalid choice` など判定前例外では INSERT しない。SELECT ポリシーなし。`session_id` は quiz_sessions ON DELETE CASCADE、`phrase_id` は phrases ON DELETE RESTRICT。分析用ビューは作らない（ダッシュボード未実装。集計は `quiz_answers` + `quiz_sessions` から後で組める）。
 
 | カラム | 型 | 制約 | 説明 |
 |---|---|---|
@@ -287,18 +287,17 @@ UNIQUE (`user_id`, `pack_id`) が Webhook 再送の冪等キー（PostgreSQL は
 2. パックなし、無料で `is_active = false`、または有料・非アクティブで未購入 → `Content pack not found`
 3. 有料かつアクティブで未購入 → `Purchased pack permission required`（有料・非アクティブで購入済みなら例外で作成可）
 4. 直近1時間の同一 `user_id` の `quiz_sessions` が 20 件以上 → `Rate limit exceeded`（`QUIZ_START_RATE_LIMIT_PER_HOUR`）
-5. セッション INSERT
-6. `order by random() limit 5` で questions INSERT
-7. 5 問に満たなければ例外（トランザクションロールバック）
+5. `profiles` を `FOR UPDATE` し、経過分を 30 分単位で回復（上限 5）。回復後が 0 なら `No hearts remaining`（セッション未作成）
+6. セッション INSERT
+7. `order by random() limit 5` で questions INSERT
+8. 5 問に満たなければ例外（トランザクションロールバック。ハートは減らない）
+9. 5 問確定後に `hearts` を 1 減算し、回復調整済みの `last_heart_updated_at` を書く（Issue #52）
 
 ### 5-2. `consume_heart(session_id_param uuid, phrase_id_param uuid)`
 
 戻り: `remaining_hearts`, `updated_at`
 
-1. 未認証 / 他人セッション / 未割当 phrase は例外
-2. attempts INSERT ON CONFLICT DO NOTHING RETURNING id
-3. RETURNING なしなら減算せず現状返却
-4. ありなら `profiles` を `FOR UPDATE` し、経過分を 30 分単位で回復（上限 5）してから 1 減算（0 未満にしない）。ハート 0 の初回誤答でも attempt は残る
+Issue #52 以降は減算しない。未認証なら `Not authenticated`。認証済みなら本人の `profiles.hearts` と `last_heart_updated_at` を返す。`quiz_attempts` への INSERT と `profiles` の UPDATE は行わない。
 
 ### 5-3. `submit_answer(session_id_param uuid, phrase_id_param uuid, selected_choice_text text, locale_param text default 'en')`
 
@@ -307,10 +306,10 @@ UNIQUE (`user_id`, `pack_id`) が Webhook 再送の冪等キー（PostgreSQL は
 1. 未認証 / 他人セッション / 未割当 phrase は例外
 2. 直近1時間の同一 `user_id` の `submit_answer_calls` が 60 件以上 → `Rate limit exceeded`（`SUBMIT_ANSWER_RATE_LIMIT_PER_HOUR`。`create_quiz_session` と同じ例外文言）
 3. `choices_by_lang[locale][correct_choice_index]` と選択テキストを比較（`ja` は `en`）
-4. 誤答時のみ内部で `consume_heart` を実行（`quiz_attempts` の ON CONFLICT は変更しない）
+4. 正誤ではハートを減算しない。誤答は保存値を返す。正答で未反映の自然回復があれば `profiles` に書き戻す（`013`）
 5. 有効な選択肢の判定後、`quiz_answers` へ INSERT ON CONFLICT DO NOTHING。行数が `quiz_session_questions` 件数と一致し `completed_at` が null なら now() を書く。`Invalid choice` では記録しない
 6. 正誤に関わらず `submit_answer_calls` へ 1 行 INSERT
-7. 正答・誤答とも `correct_choice_text` を返す。BFF は `Rate limit exceeded` を 429、`Invalid choice` を 409 `invalid_choice` に写像する
+7. 正答・誤答とも `correct_choice_text` を返す。BFF は `Rate limit exceeded` を 429、`Invalid choice` を 409 `invalid_choice` に写像する。残り 0 でも採点する
 
 ### 5-4. `sync_profile(p_preferred_language text default null)`
 
