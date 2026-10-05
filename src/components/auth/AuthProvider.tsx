@@ -36,7 +36,7 @@ export type AuthProfile = {
   preferredLanguage: string;
 };
 
-export type LinkModalReason = "save" | "checkout";
+export type LinkModalReason = "login" | "signup" | "checkout";
 
 type AuthContextValue = {
   configured: boolean;
@@ -58,8 +58,8 @@ type AuthContextValue = {
   confirmPendingCheckout: () => void;
   cancelPendingCheckout: () => void;
   triggerCheckout: (packId: string) => Promise<void>;
-  continueWithGoogle: (mode: "link" | "existing") => Promise<void>;
-  continueWithEmail: (email: string, mode: "link" | "existing") => Promise<void>;
+  continueWithGoogle: () => Promise<void>;
+  continueWithEmail: (email: string) => Promise<void>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<AuthProfile | null>;
   updateHearts: (hearts: number, lastHeartUpdatedAt: string) => void;
@@ -99,7 +99,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [authError, setAuthError] = useState<MappedAuthError | null>(null);
   const [linkModalOpen, setLinkModalOpen] = useState(false);
   const [linkModalReason, setLinkModalReason] =
-    useState<LinkModalReason>("save");
+    useState<LinkModalReason>("login");
   const [pendingCheckoutPackId, setPendingCheckoutPackId] = useState<
     string | null
   >(() => {
@@ -179,7 +179,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [configured, locale]);
 
   const openLinkModal = useCallback(
-    (reason: LinkModalReason = "save", packId?: string) => {
+    (reason: LinkModalReason = "login", packId?: string) => {
       setAuthError(null);
       setEmailSent(false);
       setLinkModalReason(reason);
@@ -291,6 +291,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (pendingPack) {
         setLinkModalReason("checkout");
         setPendingCheckoutPackId(pendingPack);
+      } else {
+        setLinkModalReason("login");
       }
       setLinkModalOpen(true);
     });
@@ -395,53 +397,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
   }, [profile, isCheckingOut, ownedPackIds, pendingCheckoutPackId]);
 
-  const continueWithGoogle = useCallback(
-    async (mode: "link" | "existing") => {
-      if (!configured) {
-        return;
-      }
-      setAuthError(null);
-      const nextPath =
-        pendingCheckoutPackId && linkModalReason === "checkout"
-          ? `/${locale}${pathname}?checkout=${encodeURIComponent(pendingCheckoutPackId)}`
-          : `/${locale}${pathname}`;
+  const continueWithGoogle = useCallback(async () => {
+    if (!configured) {
+      return;
+    }
+    setAuthError(null);
+    const nextPath =
+      pendingCheckoutPackId && linkModalReason === "checkout"
+        ? `/${locale}${pathname}?checkout=${encodeURIComponent(pendingCheckoutPackId)}`
+        : `/${locale}${pathname}`;
 
-      persistAuthNextPath(nextPath);
-      const supabase = createBrowserSupabaseClient();
-      const oauthOptions = {
-        redirectTo: callbackUrl(),
-        skipBrowserRedirect: true as const,
-      };
+    persistAuthNextPath(nextPath);
+    const supabase = createBrowserSupabaseClient();
+    const oauthOptions = {
+      redirectTo: callbackUrl(),
+      skipBrowserRedirect: true as const,
+    };
 
-      const { data, error } =
-        mode === "existing"
-          ? await (async () => {
-              await supabase.auth.signOut();
-              return supabase.auth.signInWithOAuth({
-                provider: "google",
-                options: oauthOptions,
-              });
-            })()
-          : await supabase.auth.linkIdentity({
-              provider: "google",
-              options: oauthOptions,
-            });
+    await supabase.auth.signOut();
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: oauthOptions,
+    });
 
-      if (error) {
-        setAuthError(mapAuthError(error));
-        return;
-      }
-      if (data.url) {
-        window.location.assign(data.url);
-        return;
-      }
-      setAuthError(mapAuthError({ message: "missing oauth url" }));
-    },
-    [configured, linkModalReason, locale, pathname, pendingCheckoutPackId],
-  );
+    if (error) {
+      setAuthError(mapAuthError(error));
+      return;
+    }
+    if (data.url) {
+      window.location.assign(data.url);
+      return;
+    }
+    setAuthError(mapAuthError({ message: "missing oauth url" }));
+  }, [configured, linkModalReason, locale, pathname, pendingCheckoutPackId]);
 
   const continueWithEmail = useCallback(
-    async (email: string, mode: "link" | "existing") => {
+    async (email: string) => {
       if (!configured) {
         return;
       }
@@ -454,21 +445,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       const supabase = createBrowserSupabaseClient();
       persistAuthNextPath(nextPath);
-      if (mode === "existing") {
-        await supabase.auth.signOut();
-        const { error } = await supabase.auth.signInWithOtp({
-          email,
-          options: { emailRedirectTo: callbackUrl() },
-        });
-        if (error) {
-          setAuthError(mapAuthError(error));
-          return;
-        }
-        setEmailSent(true);
-        return;
-      }
-
-      const { error } = await supabase.auth.updateUser({ email });
+      await supabase.auth.signOut();
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: { emailRedirectTo: callbackUrl() },
+      });
       if (error) {
         setAuthError(mapAuthError(error));
         return;

@@ -6,6 +6,7 @@
 > | v1.0 | 2026-09-19 | 現行ルート・認証・クイズ・Stripe フロー |
 | v1.1 | 2026-09-20 | Issue #18: 保留 Checkout に TTL と確認ステップを追加 |
 | v1.2 | 2026-09-21 | Issue #19: Success ページが purchase-status をポーリングしてから CTA を有効化 |
+| v1.3 | 2026-10-05 | ログインと新規登録はゲストを離れてサインインする。進捗は引き継がない |
 
 ---
 
@@ -19,10 +20,10 @@ graph TD
 
     Home -->|"Start learning"| QuizFree["/quiz/survival"]
     Home -->|"Travel pack"| QuizPaid["/quiz/travel"]
-    Home -->|"未所有: Buy travel pack"| CheckoutGuard{Google/Email 連携済み?}
+    Home -->|"未所有: Buy travel pack"| CheckoutGuard{Google/Email アカウント?}
     Home -->|"所有済み: Start learning"| QuizPaid
 
-    CheckoutGuard -->|"いいえ"| LinkModal["Identity Linking モーダル"]
+    CheckoutGuard -->|"いいえ"| LinkModal["ログイン / 新規登録"]
     CheckoutGuard -->|"はい"| StripeCO["Stripe Checkout 外部"]
     LinkModal -->|"Google / Email"| AuthCB["/auth/callback"]
     AuthCB --> Home
@@ -71,7 +72,7 @@ graph TD
 
 ---
 
-## 2. 匿名起動と Identity Linking
+## 2. 匿名起動とアカウントログイン
 
 ### 2-1. 起動時匿名セッション
 
@@ -95,7 +96,9 @@ sequenceDiagram
     Auth-->>User: Guest 表示 + ハート
 ```
 
-### 2-2. Google 連携（ゲスト継続 vs 既存アカウント）
+### 2-2. Google（ログインと新規登録は同じサインイン）
+
+ログインも新規登録も、今のゲストを離れてから Google へ進む。初回の Google はアカウントを作り、再訪は同じアカウントに入る。ゲストのハートはコピーしない。
 
 ```mermaid
 sequenceDiagram
@@ -106,29 +109,24 @@ sequenceDiagram
     participant Google as Google OAuth
     participant CB as /auth/callback
 
-    User->>Auth: Continue with Google
+    User->>Auth: ログインまたは新規登録
     Auth->>Auth: persistAuthNextPath (cookie)
-    alt ゲスト継続 link
-        Auth->>SB: linkIdentity(google, skipBrowserRedirect)
-    else 既存アカウント
-        Auth->>SB: signOut()
-        Auth->>SB: signInWithOAuth(google)
-    end
+    Auth->>SB: signOut()
+    Auth->>SB: signInWithOAuth(google, skipBrowserRedirect)
     SB-->>Auth: OAuth URL
     Auth-->>User: Google へ遷移
-    User->>Google: 同意
+    User->>Google: アカウント選択
     Google->>CB: /auth/callback?code=
     CB->>SB: exchangeCodeForSession(code)
     CB->>SB: rpc sync_profile
     CB-->>User: next パスへリダイレクト（オープンリダイレクト防止済み）
 ```
 
-Identity 衝突時は `mapAuthError` が `identity_collision` を返し、自動マージせず既存ログインを案内する。
+既に使われている Google でも衝突画面は出さず、そのアカウントのセッションになる。
 
 ### 2-3. Email
 
-- **ゲスト継続**: `updateUser({ email })` → 確認メール。
-- **既存ログイン**: 匿名を `signOut` した上で `signInWithOtp`。
+ログインも新規登録も、匿名を `signOut` した上で `signInWithOtp` する。ゲストへの `updateUser({ email })` は使わない。
 
 ---
 
@@ -265,7 +263,7 @@ sequenceDiagram
     API->>API: getUser / hasLinkedIdentity
     alt 匿名
         API-->>UI: 403 identity_linking_required
-        UI-->>User: 連携モーダル
+        UI-->>User: ログインを求める
     else 所有済み
         API-->>UI: 400 既に購入済みのパックです
     else 無料パック指定
@@ -300,7 +298,7 @@ sequenceDiagram
     end
 ```
 
-保留チェックアウトは `{ packId, storedAt }` を `sessionStorage` / `localStorage` の `japanki_pending_checkout_pack` に保存する（TTL 10分、`japanki_auth_next` と同じ）。OAuth 復帰用に URL `?checkout=` も使う。連携完了後、`AuthProvider` は即 `triggerCheckout` せず確認 UI を出す。続けると Checkout、キャンセル / TTL 切れ / 消費後はストレージを削除し再発火しない。
+保留チェックアウトは `{ packId, storedAt }` を `sessionStorage` / `localStorage` の `japanki_pending_checkout_pack` に保存する（TTL 10分、`japanki_auth_next` と同じ）。OAuth 復帰用に URL `?checkout=` も使う。ログイン後、`AuthProvider` は即 `triggerCheckout` せず確認 UI を出す。続けると Checkout、キャンセル / TTL 切れ / 消費後はストレージを削除し再発火しない。
 
 ---
 

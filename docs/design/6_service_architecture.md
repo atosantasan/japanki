@@ -84,8 +84,8 @@ graph TB
 | 方式 | API | 用途 |
 |---|---|---|
 | Anonymous | `signInAnonymously` | ゲスト学習 |
-| Google | `linkIdentity` / `signInWithOAuth` | 進捗保存・購入 |
-| Email | `updateUser({email})` / `signInWithOtp` | 同上 |
+| Google | `signInWithOAuth` | ログイン・新規登録・購入。先にゲストを `signOut` する |
+| Email | `signInWithOtp` | 同上。ゲストへの `updateUser` は使わない |
 
 コールバックは常に `{origin}/auth/callback`。`next` は Cookie `japanki_auth_next` または query。`safeNextPath` がオープンリダイレクトを防ぐ。
 
@@ -152,7 +152,7 @@ graph TD
 |---|---|
 | テーブル変更 | RLS で INSERT/UPDATE/DELETE ポリシーなし + RPC `auth.uid()` |
 | 有料 phrases | RLS 遮断 + `/api/phrases` で購入確認 |
-| Checkout | 連携済み Identity 必須、所有済みは 400、付与は Webhook のみ |
+| Checkout | Google/Email アカウント必須、所有済みは 400、付与は Webhook のみ |
 | Webhook | `constructEvent` 署名 |
 | 認証 next | 相対パスのみ |
 | クイズ開始 | RPC `create_quiz_session` が同一 user 20回/時で `Rate limit exceeded`。BFF は 429 |
@@ -161,7 +161,7 @@ graph TD
 
 ### 4-3. Identity 衝突
 
-他ユーザーに既にある Google/Email へ link した場合、マージしない。ゲスト進捗は捨てて既存アカウントへログインする案内のみ（Human Gate 対象）。
+ゲストへ Google / Email を link しない。購入はアカウントの `user_id` に付く。ゲストのハートとクイズ履歴はアカウントへコピーしない。
 
 ---
 

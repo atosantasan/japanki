@@ -33,13 +33,14 @@ export function AuthBar() {
     return null;
   }
 
-  const collision = authError?.kind === "identity_collision";
   const title =
-    collision
-      ? t("collisionTitle")
-      : linkModalReason === "checkout"
-        ? t("checkoutGuard")
-        : t("saveProgress");
+    linkModalReason === "checkout"
+      ? t("checkoutGuard")
+      : linkModalReason === "signup"
+        ? t("signUp")
+        : t("login");
+  const body =
+    linkModalReason === "signup" ? t("signUpBody") : t("loginBody");
 
   function dismissModal() {
     clearAuthError();
@@ -107,73 +108,52 @@ export function AuthBar() {
             >
               <h2 className="text-xl font-semibold text-cream">{title}</h2>
               <p className="mt-3 text-sm leading-relaxed text-cream/75">
-                {collision ? t("collisionBody") : t("continueEmail")}
+                {body}
               </p>
-              {authError && !collision ? (
+              {authError ? (
                 <p className="mt-3 text-sm text-sun">{t(authError.messageKey)}</p>
               ) : null}
               {emailSent ? (
                 <p className="mt-3 text-sm text-cream">{t("emailSent")}</p>
               ) : null}
-              {!collision ? (
-                <div className="mt-5 flex flex-col gap-3">
-                  <button
-                    type="button"
-                    className="rounded-full bg-sun px-4 py-3 text-sm font-semibold text-cream"
-                    onClick={() => void continueWithGoogle("link")}
-                  >
-                    {t("continueGoogle")}
-                  </button>
-                  <form
-                    className="flex flex-col gap-2"
-                    onSubmit={(event) => {
-                      event.preventDefault();
-                      void continueWithEmail(email, "link");
-                    }}
-                  >
-                    <input
-                      type="email"
-                      required
-                      value={email}
-                      onChange={(event) => setEmail(event.target.value)}
-                      placeholder={t("emailPlaceholder")}
-                      className="rounded-full border border-cream/20 bg-transparent px-4 py-3 text-sm text-cream outline-none"
-                    />
-                    <button
-                      type="submit"
-                      className="rounded-full border border-cream/30 px-4 py-3 text-sm font-semibold text-cream"
-                    >
-                      {t("sendLink")}
-                    </button>
-                  </form>
-                </div>
-              ) : (
-                <div className="mt-5 flex flex-col gap-3">
-                  <button
-                    type="button"
-                    className="rounded-full bg-sun px-4 py-3 text-sm font-semibold text-cream"
-                    onClick={() => void continueWithGoogle("existing")}
-                  >
-                    {t("useExisting")}
-                  </button>
-                  <button
-                    type="button"
-                    className="rounded-full border border-cream/30 px-4 py-3 text-sm text-cream"
-                    onClick={dismissModal}
-                  >
-                    {t("stayGuest")}
-                  </button>
-                </div>
-              )}
-              {!collision ? (
+              <div className="mt-5 flex flex-col gap-3">
                 <button
                   type="button"
-                  className="mt-4 text-xs text-cream/50"
-                  onClick={dismissModal}
+                  className="rounded-full bg-sun px-4 py-3 text-sm font-semibold text-cream"
+                  onClick={() => void continueWithGoogle()}
                 >
-                  {t("stayGuest")}
+                  {t("continueGoogle")}
                 </button>
-              ) : null}
+                <form
+                  className="flex flex-col gap-2"
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    void continueWithEmail(email);
+                  }}
+                >
+                  <input
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
+                    placeholder={t("emailPlaceholder")}
+                    className="rounded-full border border-cream/20 bg-transparent px-4 py-3 text-sm text-cream outline-none"
+                  />
+                  <button
+                    type="submit"
+                    className="rounded-full border border-cream/30 px-4 py-3 text-sm font-semibold text-cream"
+                  >
+                    {t("sendLink")}
+                  </button>
+                </form>
+              </div>
+              <button
+                type="button"
+                className="mt-4 text-xs text-cream/50"
+                onClick={dismissModal}
+              >
+                {t("stayGuest")}
+              </button>
             </div>
           </div>,
           document.body,
@@ -186,7 +166,7 @@ export function AuthBar() {
         {authError && !linkModalOpen ? (
           <button
             type="button"
-            onClick={() => openLinkModal("save")}
+            onClick={() => openLinkModal("login")}
             className="text-xs text-sun underline hover:text-sun/80"
             role="alert"
           >
@@ -209,13 +189,22 @@ export function AuthBar() {
             {t("signOut")}
           </button>
         ) : (
-          <button
-            type="button"
-            className="rounded-full bg-cream px-3 py-1 text-xs font-semibold text-ink"
-            onClick={() => openLinkModal("save")}
-          >
-            {t("saveProgress")}
-          </button>
+          <>
+            <button
+              type="button"
+              className="rounded-full border border-cream/20 px-3 py-1 text-xs text-cream/80 hover:border-cream/50"
+              onClick={() => openLinkModal("login")}
+            >
+              {t("login")}
+            </button>
+            <button
+              type="button"
+              className="rounded-full bg-cream px-3 py-1 text-xs font-semibold text-ink"
+              onClick={() => openLinkModal("signup")}
+            >
+              {t("signUp")}
+            </button>
+          </>
         )}
       </div>
       {modal}
