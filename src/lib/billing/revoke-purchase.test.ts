@@ -19,6 +19,7 @@ describe("revokePurchaseByPaymentIntent", () => {
       revokePurchaseByPaymentIntent(admin, "pi_refund"),
     ).resolves.toBe("revoked");
     expect(admin.from).toHaveBeenCalledWith("user_purchases");
+    expect(admin.from).toHaveBeenCalledWith("user_unlimited_hearts");
     expect(eq).toHaveBeenCalledWith("stripe_payment_intent_id", "pi_refund");
   });
 

@@ -91,11 +91,11 @@
 ### ② ハートモジュール
 
 - **F-2-1: 初期値 5 / 上限 5**: `profiles.hearts` は 0〜5。
-- **F-2-2: 開始成功時に1減算**: 5問のセッション確定に成功したとき、`create_quiz_session` がハートをちょうど1つ消費する（Issue #52 / AC-QUIZ-05）。正答・誤答では消費しない。減算前に30分単位の自然回復を反映する。失敗（未認証、未購入、5問未満、ハート不足、レート制限）では消費せずロールバックする。
+- **F-2-2: 開始成功時に1減算**: 5問のセッション確定に成功したとき、`create_quiz_session` がハートをちょうど1つ消費する（Issue #52 / AC-QUIZ-05）。正答・誤答では消費しない。減算前に30分単位の自然回復を反映する。失敗（未認証、未購入、5問未満、ハート不足、レート制限）では消費せずロールバックする。`user_unlimited_hearts` があるアカウントは、この減算と 0 ハート拒否の対象外。パック権限とレート制限は残る。
 - **F-2-3: 未割当フレーズ拒否**: セッションに無い `phrase_id` の採点は例外。採点ではハートは減らない。
 - **F-2-4: 所有権検証**: セッション `user_id` が `auth.uid()` と一致しない場合は拒否。ハート減算は本人の `profiles` 行を `FOR UPDATE` してから行う。
 - **F-2-5: 自然回復**: 30 分で 1 回復（RPC 内計算 + クライアント表示 `recoverHearts`）。満タン時はカウントダウンなし。上限は 5。
-- **F-2-6: 0 ハート時**: 回復後の残りが 0 なら開始できない（UI は開始せず、`create_quiz_session` は `No hearts remaining` でセッションを作らない）。開始に成功したセッションは、開始後の残りが 0 でも割り当て済みの5問を解答できる。
+- **F-2-6: 0 ハート時**: 回復後の残りが 0 なら開始できない（UI は開始せず、`create_quiz_session` は `No hearts remaining` でセッションを作らない）。開始に成功したセッションは、開始後の残りが 0 でも割り当て済みの5問を解答できる。ハート無制限の所有者は 0 でも開始でき、ヘッダーは 5 個と回復カウントを出さず無制限と表示する。
 
 ### ③ 音声モジュール
 
@@ -106,8 +106,8 @@
 ### ④ 認証モジュール
 
 - **F-4-1: 匿名起動**: Supabase 設定済みなら起動時に匿名サインインする。サインアウト後も新しい匿名ゲストに戻る。
-- **F-4-2: Google OAuth**: ログインも新規登録も、匿名セッションを `signOut` したあと `signInWithOAuth` する。初回はその Google でアカウントを作り、再訪は同じアカウントに入る。`linkIdentity` でゲストを継続しない。
-- **F-4-3: Email Magic Link**: ログインも新規登録も、匿名を `signOut` したあと `signInWithOtp` する。ゲストへの `updateUser({ email })` は使わない。
+- **F-4-2: Google OAuth**: 画面の入口はログイン一つ。匿名セッションを `signOut` したあと `signInWithOAuth` する。初回はその Google でアカウントを作り、再訪は同じアカウントに入る。`linkIdentity` でゲストを継続しない。
+- **F-4-3: Email Magic Link**: ログインは、匿名を `signOut` したあと `signInWithOtp` する。ゲストへの `updateUser({ email })` は使わない。
 - **F-4-4: ゲスト進捗は引き継がない**: ハートとクイズ履歴はコピーしない。既に使われている Google / Email を選んでもそのアカウントへ入り、衝突画面を正規のログイン経路にしない。
 - **F-4-5: プロファイル同期**: `sync_profile` RPC が `is_anonymous` と `preferred_language` を更新。クライアント UPDATE ポリシーは作らない。
 - **F-4-6: オープンリダイレクト防止**: 認証後 `next` は同一オリジンの相対パスのみ許可。
@@ -115,9 +115,9 @@
 
 ### ⑤ 課金モジュール（都度購入）
 
-- **F-5-1: 匿名購入禁止**: `is_anonymous` または Google/Email 未ログインなら Checkout 403（`identity_linking_required`）→ ログインを求める。
-- **F-5-2: 二重購入防止**: 所有済みなら Checkout 400（「既に購入済みのパックです」）。UI は「学習を始める」に切替。
-- **F-5-3: Webhook のみ付与**: Success ページは権限を書かない。`checkout.session.completed` の署名検証後に `user_purchases` INSERT。UNIQUE で冪等。Success ページは `GET /api/billing/purchase-status` をポーリングして反映を確認し、確認できてから CTA を有効化する。タイムアウト時は再確認と問い合わせ導線を出す。
+- **F-5-1: 匿名購入禁止**: `is_anonymous` または Google/Email 未ログインなら Checkout 403（`identity_linking_required`）→ ログインを求める。トラベルパックもハート無制限も同じ。
+- **F-5-2: 二重購入防止**: 所有済みなら Checkout 400（「既に購入済みのパックです」）。トラベルパックの UI は「学習を始める」に切替。ハート無制限の UI は所有中の表示にする。
+- **F-5-3: Webhook のみ付与**: Success ページは権限を書かない。`checkout.session.completed` の署名検証後、トラベルパックは `user_purchases`、ハート無制限（`product_id = unlimited_hearts`、USD 1.99）は `user_unlimited_hearts` へ INSERT。UNIQUE で冪等。片方の購入・返金はもう片方に影響しない。Success ページは `GET /api/billing/purchase-status` をポーリングして反映を確認し、確認できてから CTA を有効化する。トラベルの CTA はパックを開き、無制限の CTA はホームへ戻る。タイムアウト時は再確認と問い合わせ導線を出す。
 - **F-5-4: Customer Portal**: 連携済みユーザーが Stripe 上で領収・支払方法を管理できる。
 - **F-5-5: 保留チェックアウト**: ログイン前の pack ID を `{ packId, storedAt }` として query / sessionStorage / localStorage に保持する（TTL 10分）。ログイン後は確認ステップを挟み、続ける場合のみ Checkout へ進む。期限切れ・キャンセル・消費後はストレージを削除する。
 
@@ -160,8 +160,8 @@
 | AC-QUIZ-01 | 1 セッションにサーバー確定の重複なし 5 `phrase` |
 | AC-QUIZ-02 | 同一セッションで同じ phrase を複数回出題しない |
 | AC-QUIZ-03 | 選択パック以外の問題を含めない |
-| AC-QUIZ-04 | 回復後ハートが 0 なら `create_quiz_session` はセッションを作らず例外 |
-| AC-QUIZ-05 | 開始成功 1 回につきハートをちょうど 1 つ減算する。正答・誤答では減算しない |
+| AC-QUIZ-04 | 回復後ハートが 0 なら `create_quiz_session` はセッションを作らず例外。`user_unlimited_hearts` がある場合は例外にしない |
+| AC-QUIZ-05 | 開始成功 1 回につきハートをちょうど 1 つ減算する。正答・誤答では減算しない。`user_unlimited_hearts` がある場合は減算しない |
 | AC-QUIZ-06 | 5 件未満ならセッション未作成でロールバック |
 | AC-QUIZ-07 | 有料パックは本人の `user_purchases` が無ければ RPC 例外 |
 
@@ -174,6 +174,6 @@
 | フレーズ音声ファイル `public/audio/*.mp3` | 未配置。生成トーンへフォールバック |
 | PWA アイコン `/icon-192.png`, `/icon-512.png` | Manifest が参照。リポジトリ `public/` には未配置。テストでパス規約を検証 |
 | `profiles.last_x_shared_at` | スキーマのみ。X シェア回復は未実装 |
-| ハート 0 での開始ロック | 回復後ハートが 0 なら開始不可。開始済みの5問は解答できる（Issue #52） |
+| ハート 0 での開始ロック | 回復後ハートが 0 なら開始不可。ハート無制限の購入者は対象外。開始済みの5問は解答できる（Issue #52） |
 | オフラインでの新規セッション | 不可（RPC / API 必須） |
 | Webhook と Success のレース | Success 直後のクイズ開始が未購入扱いになり得る |

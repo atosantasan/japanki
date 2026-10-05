@@ -47,5 +47,9 @@ async function postStartQuiz(
   ) {
     throw new Error("Unable to start quiz");
   }
-  return json as StartQuizResult;
+  const body = json as StartQuizResult;
+  return {
+    ...body,
+    unlimitedHearts: body.unlimitedHearts === true,
+  };
 }

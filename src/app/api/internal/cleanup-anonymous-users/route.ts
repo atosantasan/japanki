@@ -27,16 +27,22 @@ function createAnonymousCleanupStore() {
       if (userIds.length === 0) {
         return [];
       }
-      const { data, error } = await admin
-        .from("user_purchases")
-        .select("user_id")
-        .in("user_id", userIds);
-      if (error) {
-        throw error;
+      const [purchases, unlimitedHearts] = await Promise.all([
+        admin.from("user_purchases").select("user_id").in("user_id", userIds),
+        admin
+          .from("user_unlimited_hearts")
+          .select("user_id")
+          .in("user_id", userIds),
+      ]);
+      if (purchases.error) {
+        throw purchases.error;
+      }
+      if (unlimitedHearts.error) {
+        throw unlimitedHearts.error;
       }
       return [
         ...new Set(
-          (data ?? [])
+          [...(purchases.data ?? []), ...(unlimitedHearts.data ?? [])]
             .map((row) => row.user_id)
             .filter((userId): userId is string => typeof userId === "string"),
         ),

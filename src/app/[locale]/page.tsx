@@ -1,6 +1,9 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { AppHeader } from "@/components/AppHeader";
-import { PurchaseButton } from "@/components/billing/PurchaseButton";
+import {
+  PurchaseButton,
+  UnlimitedHeartsButton,
+} from "@/components/billing/PurchaseButton";
 import { SiteFooter } from "@/components/SiteFooter";
 import { Link } from "@/i18n/navigation";
 import { FREE_PACK_ID, PAID_PACK_ID } from "@/lib/constants/app";
@@ -64,6 +67,7 @@ export default async function HomePage({ params }: HomePageProps) {
             {t("travelCta")}
           </Link>
           <PurchaseButton packId={PAID_PACK_ID} />
+          <UnlimitedHeartsButton />
         </div>
       </main>
       <SiteFooter />

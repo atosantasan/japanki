@@ -1,9 +1,14 @@
 import { NextResponse } from "next/server";
 import { getPurchaseStatusForRequest } from "@/lib/billing/purchase-status";
+import { UNLIMITED_HEARTS_PRODUCT_ID } from "@/lib/constants/app";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 export async function GET(request: Request) {
-  const packId = new URL(request.url).searchParams.get("pack_id") ?? "";
+  const url = new URL(request.url);
+  const packId =
+    url.searchParams.get("product_id") ??
+    url.searchParams.get("pack_id") ??
+    "";
   const userClient = await createServerSupabaseClient();
 
   const result = await getPurchaseStatusForRequest(packId, {
@@ -15,6 +20,17 @@ export async function GET(request: Request) {
       return { id: data.user.id };
     },
     async hasPurchase(userId, id) {
+      if (id === UNLIMITED_HEARTS_PRODUCT_ID) {
+        const { data, error } = await userClient
+          .from("user_unlimited_hearts")
+          .select("id")
+          .eq("user_id", userId)
+          .maybeSingle();
+        if (error) {
+          throw error;
+        }
+        return Boolean(data);
+      }
       const { data, error } = await userClient
         .from("user_purchases")
         .select("pack_id")

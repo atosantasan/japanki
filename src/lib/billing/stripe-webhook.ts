@@ -1,3 +1,5 @@
+import { UNLIMITED_HEARTS_PRODUCT_ID } from "@/lib/constants/app";
+
 export type StripeLikeEvent = {
   type: string;
   data: {
@@ -51,6 +53,10 @@ export async function handleStripeWebhook(input: {
     packId: string,
     paymentIntentId: string | null,
   ) => Promise<"inserted" | "duplicate">;
+  grantUnlimitedHearts?: (
+    userId: string,
+    paymentIntentId: string | null,
+  ) => Promise<"inserted" | "duplicate">;
   revokePurchase?: (
     paymentIntentId: string,
   ) => Promise<"revoked" | "not_found">;
@@ -86,14 +92,21 @@ export async function handleStripeWebhook(input: {
 
   const userId = event.data.object.metadata?.supabase_user_id;
   const packId = event.data.object.metadata?.pack_id;
+  const productId = event.data.object.metadata?.product_id;
+  const paymentIntentId = readPaymentIntentId(event.data.object.payment_intent);
+
+  if (productId === UNLIMITED_HEARTS_PRODUCT_ID) {
+    if (!userId || !input.grantUnlimitedHearts) {
+      return { status: 400, body: { error: "Missing purchase metadata" } };
+    }
+    await input.grantUnlimitedHearts(userId, paymentIntentId);
+    return { status: 200, body: { received: true } };
+  }
+
   if (!userId || !packId) {
     return { status: 400, body: { error: "Missing purchase metadata" } };
   }
 
-  await input.grantPurchase(
-    userId,
-    packId,
-    readPaymentIntentId(event.data.object.payment_intent),
-  );
+  await input.grantPurchase(userId, packId, paymentIntentId);
   return { status: 200, body: { received: true } };
 }

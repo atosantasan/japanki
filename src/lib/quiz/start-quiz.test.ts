@@ -178,6 +178,31 @@ describe("startQuizForRequest", () => {
     expect(JSON.stringify(result.body)).not.toContain("correct_choice_index");
     expect(JSON.stringify(result.body)).not.toContain("correctChoiceText");
     expect(JSON.stringify(result.body)).not.toContain("correctChoiceIndex");
+    expect(result.body.unlimitedHearts).toBe(false);
+  });
+
+  it("reports unlimited hearts without treating them as a pack unlock", async () => {
+    const result = await startQuizForRequest(
+      { packId: "survival", locale: "en" },
+      {
+        getUser: vi.fn().mockResolvedValue({ id: "user-1" }),
+        createSession: vi.fn().mockResolvedValue("sess-1"),
+        loadAssigned: vi.fn().mockResolvedValue(assigned),
+        loadPhrases: vi.fn().mockResolvedValue(phrases),
+        getHearts: vi.fn().mockResolvedValue({
+          remainingHearts: 0,
+          updatedAt: "2026-09-19T00:00:00Z",
+        }),
+        hasUnlimitedHearts: vi.fn().mockResolvedValue(true),
+      },
+    );
+
+    expect(result.status).toBe(200);
+    if (result.status !== 200) {
+      throw new Error("expected started quiz");
+    }
+    expect(result.body.unlimitedHearts).toBe(true);
+    expect(result.body.remainingHearts).toBe(0);
   });
 });
 

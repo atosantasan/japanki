@@ -4,6 +4,7 @@ import { useState } from "react";
 import { createPortal } from "react-dom";
 import { useTranslations } from "next-intl";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { UNLIMITED_HEARTS_PRODUCT_ID } from "@/lib/constants/app";
 
 export function AuthBar() {
   const t = useTranslations("Auth");
@@ -34,13 +35,7 @@ export function AuthBar() {
   }
 
   const title =
-    linkModalReason === "checkout"
-      ? t("checkoutGuard")
-      : linkModalReason === "signup"
-        ? t("signUp")
-        : t("login");
-  const body =
-    linkModalReason === "signup" ? t("signUpBody") : t("loginBody");
+    linkModalReason === "checkout" ? t("checkoutGuard") : t("login");
 
   function dismissModal() {
     clearAuthError();
@@ -50,7 +45,9 @@ export function AuthBar() {
   const confirmPackName =
     checkoutConfirmPackId === "travel"
       ? tHome("travelCta")
-      : (checkoutConfirmPackId ?? "");
+      : checkoutConfirmPackId === UNLIMITED_HEARTS_PRODUCT_ID
+        ? tHome("unlimitedHeartsCta")
+        : (checkoutConfirmPackId ?? "");
 
   const confirmModal =
     checkoutConfirmPackId && typeof document !== "undefined"
@@ -108,8 +105,12 @@ export function AuthBar() {
             >
               <h2 className="text-xl font-semibold text-cream">{title}</h2>
               <p className="mt-3 text-sm leading-relaxed text-cream/75">
-                {body}
+                {t("loginLead")}
               </p>
+              <ul className="mt-3 list-disc space-y-1 pl-5 text-sm leading-relaxed text-cream/75">
+                <li>{t("loginPurchases")}</li>
+                <li>{t("loginHearts")}</li>
+              </ul>
               {authError ? (
                 <p className="mt-3 text-sm text-sun">{t(authError.messageKey)}</p>
               ) : null}
@@ -124,6 +125,7 @@ export function AuthBar() {
                 >
                   {t("continueGoogle")}
                 </button>
+                <p className="text-center text-xs text-cream/50">{t("emailOr")}</p>
                 <form
                   className="flex flex-col gap-2"
                   onSubmit={(event) => {
@@ -189,22 +191,13 @@ export function AuthBar() {
             {t("signOut")}
           </button>
         ) : (
-          <>
-            <button
-              type="button"
-              className="rounded-full border border-cream/20 px-3 py-1 text-xs text-cream/80 hover:border-cream/50"
-              onClick={() => openLinkModal("login")}
-            >
-              {t("login")}
-            </button>
-            <button
-              type="button"
-              className="rounded-full bg-cream px-3 py-1 text-xs font-semibold text-ink"
-              onClick={() => openLinkModal("signup")}
-            >
-              {t("signUp")}
-            </button>
-          </>
+          <button
+            type="button"
+            className="rounded-full bg-cream px-3 py-1 text-xs font-semibold text-ink"
+            onClick={() => openLinkModal("login")}
+          >
+            {t("login")}
+          </button>
         )}
       </div>
       {modal}

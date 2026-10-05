@@ -27,13 +27,16 @@ describe("link modal surface", () => {
     expect(snippet).toMatch(/setEmailSent\(false\)/);
   });
 
-  it("offers login and sign-up as the same sign-in, without linking the guest", () => {
+  it("offers a single login screen and does not link the guest", () => {
     const source = readFileSync(
       join(srcDir, "components/auth/AuthBar.tsx"),
       "utf8",
     );
     expect(source).toMatch(/openLinkModal\("login"\)/);
-    expect(source).toMatch(/openLinkModal\("signup"\)/);
+    expect(source).not.toMatch(/openLinkModal\("signup"\)/);
+    expect(source).toMatch(/t\("loginLead"\)/);
+    expect(source).toMatch(/t\("loginPurchases"\)/);
+    expect(source).toMatch(/t\("loginHearts"\)/);
     expect(source).toMatch(/continueWithGoogle\(\)/);
     expect(source).toMatch(/continueWithEmail\(email\)/);
     expect(source).not.toMatch(/continueWithGoogle\("link"\)/);

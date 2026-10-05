@@ -11,6 +11,35 @@ type UserPacksClient = {
   };
 };
 
+type UnlimitedHeartsClient = {
+  from: (table: string) => {
+    select: (columns: string) => {
+      maybeSingle: () => PromiseLike<{
+        data: { id: string } | null;
+        error: { code?: string; message?: string } | null;
+      }>;
+    };
+  };
+};
+
+export async function fetchHasUnlimitedHearts(
+  supabase: UnlimitedHeartsClient,
+): Promise<boolean> {
+  const { data, error } = await supabase
+    .from("user_unlimited_hearts")
+    .select("id")
+    .maybeSingle();
+
+  if (error) {
+    if (error.code !== "PGRST205") {
+      console.error("fetchHasUnlimitedHearts failed:", error);
+    }
+    return false;
+  }
+
+  return Boolean(data?.id);
+}
+
 export async function fetchUserPacks(
   supabase: UserPacksClient,
 ): Promise<string[]> {

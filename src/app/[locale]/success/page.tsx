@@ -4,11 +4,11 @@ import { AppHeader } from "@/components/AppHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { routing } from "@/i18n/routing";
 import { SuccessPurchaseGate } from "@/components/billing/SuccessPurchaseGate";
-import { PAID_PACK_ID } from "@/lib/constants/app";
+import { PAID_PACK_ID, UNLIMITED_HEARTS_PRODUCT_ID } from "@/lib/constants/app";
 
 type SuccessPageProps = {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ pack?: string }>;
+  searchParams: Promise<{ pack?: string; product?: string }>;
 };
 
 export function generateStaticParams() {
@@ -23,7 +23,9 @@ export default async function SuccessPage({
   const query = await searchParams;
   setRequestLocale(locale);
   const t = await getTranslations("Success");
-  const packId = query.pack?.trim() || PAID_PACK_ID;
+  const packId =
+    query.product?.trim() || query.pack?.trim() || PAID_PACK_ID;
+  const isUnlimited = packId === UNLIMITED_HEARTS_PRODUCT_ID;
 
   return (
     <div className="relative flex min-h-full flex-1 flex-col">
@@ -32,7 +34,9 @@ export default async function SuccessPage({
         <h1 className="text-4xl font-semibold tracking-tight text-cream">
           {t("title")}
         </h1>
-        <p className="mt-4 text-lg leading-relaxed text-cream/75">{t("body")}</p>
+        <p className="mt-4 text-lg leading-relaxed text-cream/75">
+          {isUnlimited ? t("unlimitedBody") : t("body")}
+        </p>
         <SuccessPurchaseGate packId={packId} />
       </main>
       <SiteFooter />

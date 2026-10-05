@@ -7,6 +7,7 @@
 | v1.1 | 2026-09-20 | Issue #18: 保留 Checkout に TTL と確認ステップを追加 |
 | v1.2 | 2026-09-21 | Issue #19: Success ページが purchase-status をポーリングしてから CTA を有効化 |
 | v1.3 | 2026-10-05 | ログインと新規登録はゲストを離れてサインインする。進捗は引き継がない |
+| v1.4 | 2026-10-05 | 画面の入口はログイン一つ。説明で初回作成と再訪を案内する |
 
 ---
 
@@ -23,7 +24,7 @@ graph TD
     Home -->|"未所有: Buy travel pack"| CheckoutGuard{Google/Email アカウント?}
     Home -->|"所有済み: Start learning"| QuizPaid
 
-    CheckoutGuard -->|"いいえ"| LinkModal["ログイン / 新規登録"]
+    CheckoutGuard -->|"いいえ"| LinkModal["ログイン"]
     CheckoutGuard -->|"はい"| StripeCO["Stripe Checkout 外部"]
     LinkModal -->|"Google / Email"| AuthCB["/auth/callback"]
     AuthCB --> Home
@@ -96,9 +97,9 @@ sequenceDiagram
     Auth-->>User: Guest 表示 + ハート
 ```
 
-### 2-2. Google（ログインと新規登録は同じサインイン）
+### 2-2. Google（ログイン）
 
-ログインも新規登録も、今のゲストを離れてから Google へ進む。初回の Google はアカウントを作り、再訪は同じアカウントに入る。ゲストのハートはコピーしない。
+画面の入口はログイン一つ。今のゲストを離れてから Google へ進む。初回の Google はアカウントを作り、再訪は同じアカウントに入る。ゲストのハートはコピーしない。
 
 ```mermaid
 sequenceDiagram
@@ -109,7 +110,7 @@ sequenceDiagram
     participant Google as Google OAuth
     participant CB as /auth/callback
 
-    User->>Auth: ログインまたは新規登録
+    User->>Auth: ログイン
     Auth->>Auth: persistAuthNextPath (cookie)
     Auth->>SB: signOut()
     Auth->>SB: signInWithOAuth(google, skipBrowserRedirect)
@@ -126,7 +127,7 @@ sequenceDiagram
 
 ### 2-3. Email
 
-ログインも新規登録も、匿名を `signOut` した上で `signInWithOtp` する。ゲストへの `updateUser({ email })` は使わない。
+ログインは、匿名を `signOut` した上で `signInWithOtp` する。ゲストへの `updateUser({ email })` は使わない。
 
 ---
 
@@ -150,12 +151,14 @@ sequenceDiagram
     else フレーズ 5 未満
         RPC-->>UI: Not enough phrases...
         UI-->>User: startError
-    else 回復後 hearts < 1
+    else 回復後 hearts < 1 かつハート無制限なし
         RPC-->>UI: No hearts remaining
         UI-->>User: heartsEmpty
     else OK
         RPC->>DB: quiz_sessions + ランダム5問 INSERT
-        RPC->>DB: hearts - 1
+        alt ハート無制限なし
+            RPC->>DB: hearts - 1
+        end
         RPC-->>UI: session_id
         UI->>API: pack_id
         API->>API: getUser / getPack / hasPurchase / Zod
@@ -193,17 +196,22 @@ sequenceDiagram
 
     UI->>RPC: pack_id
     RPC->>RPC: auth.uid() / パック権限 / レート制限
-    RPC->>DB: profiles FOR UPDATE
-    RPC->>RPC: 30分回復を加算（上限5）
-    alt 回復後 hearts < 1
-        RPC-->>UI: No hearts remaining（セッション未作成）
-    else 回復後 hearts >= 1
-        RPC->>DB: quiz_sessions + ランダム5問 INSERT
-        alt 5問未満
-            RPC-->>UI: 例外（ロールバック。ハートは減らない）
-        else 5問確定
-            RPC->>DB: hearts - 1
-            RPC-->>UI: session_id
+    alt user_unlimited_hearts あり
+        RPC->>DB: quiz_sessions + ランダム5問 INSERT（ハートは減算しない）
+        RPC-->>UI: session_id
+    else 無制限なし
+        RPC->>DB: profiles FOR UPDATE
+        RPC->>RPC: 30分回復を加算（上限5）
+        alt 回復後 hearts < 1
+            RPC-->>UI: No hearts remaining（セッション未作成）
+        else 回復後 hearts >= 1
+            RPC->>DB: quiz_sessions + ランダム5問 INSERT
+            alt 5問未満
+                RPC-->>UI: 例外（ロールバック。ハートは減らない）
+            else 5問確定
+                RPC->>DB: hearts - 1
+                RPC-->>UI: session_id
+            end
         end
     end
 ```

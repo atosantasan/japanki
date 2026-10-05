@@ -25,7 +25,8 @@ import {
   getPendingCheckoutPack,
   setPendingCheckoutPack,
 } from "@/lib/billing/pending-checkout";
-import { fetchUserPacks, isPackOwned } from "@/lib/billing/user-packs";
+import { fetchHasUnlimitedHearts, fetchUserPacks, isPackOwned } from "@/lib/billing/user-packs";
+import { UNLIMITED_HEARTS_PRODUCT_ID } from "@/lib/constants/app";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 
@@ -36,7 +37,7 @@ export type AuthProfile = {
   preferredLanguage: string;
 };
 
-export type LinkModalReason = "login" | "signup" | "checkout";
+export type LinkModalReason = "login" | "checkout";
 
 type AuthContextValue = {
   configured: boolean;
@@ -51,6 +52,7 @@ type AuthContextValue = {
   isCheckingOut: boolean;
   checkoutError: string | null;
   ownedPackIds: string[];
+  hasUnlimitedHearts: boolean;
   openLinkModal: (reason?: LinkModalReason, packId?: string) => void;
   closeLinkModal: () => void;
   clearAuthError: () => void;
@@ -116,6 +118,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [ownedPackIds, setOwnedPackIds] = useState<string[]>([]);
+  const [hasUnlimitedHearts, setHasUnlimitedHearts] = useState(false);
   const autoCheckoutTriggeredRef = useRef(false);
   const profileRefreshEpochRef = useRef(createProfileRefreshEpoch());
 
@@ -141,14 +144,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     if (!user) {
       setOwnedPackIds([]);
+      setHasUnlimitedHearts(false);
       return null;
     }
 
-    const packIds = await fetchUserPacks(supabase);
+    const [packIds, unlimitedHearts] = await Promise.all([
+      fetchUserPacks(supabase),
+      fetchHasUnlimitedHearts(supabase),
+    ]);
     if (!isCurrent()) {
       return null;
     }
     setOwnedPackIds(packIds);
+    setHasUnlimitedHearts(unlimitedHearts);
 
     const { data } = await syncProfileSafely(supabase, locale);
     if (!isCurrent()) {
@@ -216,7 +224,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           method: "POST",
           credentials: "include",
           headers,
-          body: JSON.stringify({ packId, locale }),
+          body: JSON.stringify(
+            packId === UNLIMITED_HEARTS_PRODUCT_ID
+              ? { productId: packId, locale }
+              : { packId, locale },
+          ),
         });
         const payload = (await response.json()) as {
           url?: string;
@@ -356,6 +368,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setCheckoutConfirmPackId(null);
         setProfile(null);
         setOwnedPackIds([]);
+        setHasUnlimitedHearts(false);
       }
     });
 
@@ -390,12 +403,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     void Promise.resolve().then(() => {
       setLinkModalOpen(false);
       setPendingCheckoutPackId(null);
-      if (isPackOwned(ownedPackIds, targetPack)) {
+      const alreadyOwned =
+        targetPack === UNLIMITED_HEARTS_PRODUCT_ID
+          ? hasUnlimitedHearts
+          : isPackOwned(ownedPackIds, targetPack);
+      if (alreadyOwned) {
         return;
       }
       setCheckoutConfirmPackId(targetPack);
     });
-  }, [profile, isCheckingOut, ownedPackIds, pendingCheckoutPackId]);
+  }, [
+    profile,
+    isCheckingOut,
+    ownedPackIds,
+    hasUnlimitedHearts,
+    pendingCheckoutPackId,
+  ]);
 
   const continueWithGoogle = useCallback(async () => {
     if (!configured) {
@@ -495,6 +518,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       isCheckingOut,
       checkoutError,
       ownedPackIds,
+      hasUnlimitedHearts,
       openLinkModal,
       closeLinkModal,
       clearAuthError,
@@ -526,6 +550,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       linkModalReason,
       loading,
       ownedPackIds,
+      hasUnlimitedHearts,
       openLinkModal,
       pendingCheckoutPackId,
       profile,
