@@ -41,7 +41,7 @@ graph TD
         end
 
         subgraph Logic ["クライアントロジック"]
-            L_Auth["AuthProvider\n匿名起動 / Identity Linking\nownedPackIds / pendingCheckout"]
+            L_Auth["AuthProvider\n匿名起動 / ログイン\nownedPackIds / pendingCheckout"]
             L_Quiz["QuizPlay\ncreateQuizSession / consumeHeart"]
             L_Shuffle["shuffleChoiceOrder / prepareQuestion"]
             L_Audio["playPhraseAudio\nファイル or 生成トーン"]
@@ -190,7 +190,7 @@ graph TD
 | **API** | `GET /api/account/export` | セッション RPC `export_my_data` + `getUser` 識別子の JSON |
 | **API** | `POST /api/account/delete` | `deleteUser`。Stripe Customer 削除は best-effort |
 | **Auth CB** | `GET /auth/callback` | OAuth/OTP の code 交換。`sync_profile` を試行 |
-| **Context** | `src/components/auth/AuthProvider.tsx` | 匿名 boot、連携モーダル、所有パック、自動 Checkout |
+| **Context** | `src/components/auth/AuthProvider.tsx` | 匿名 boot、ログイン、所有パック、自動 Checkout |
 | **クイズ UI** | `src/components/quiz/QuizPlay.tsx` | セッション開始時に1ハート、出題、音声 |
 | **RPC クライアント** | `src/lib/quiz/rpc-client.ts` | `create_quiz_session` / `consume_heart` / `submit_answer` |
 | **出題** | `src/lib/quiz/build-queue.ts` 等 | 5問検証、シャッフル、正誤 |

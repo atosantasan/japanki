@@ -41,7 +41,7 @@
 
 ## 2. システム概要
 
-ゲスト（匿名 Auth）のまま 1 分クイズを始められ、進捗保存や有料パック購入時だけ Google / Email 連携を要求する。クイズの 5 問割り当てとハート減算はクライアントではなく **Supabase RPC** が確定する。有料フレーズ本文は RLS で遮断し、認証・購入検証済みの `/api/phrases` だけが返す。購入権限の付与は **Stripe Webhook のみ**。
+ゲスト（匿名 Auth）のまま 1 分クイズを始められ、ハートだけを持つ。有料パックの購入は Google / Email のアカウントにだけ紐づく。ゲストのハートやクイズ履歴はアカウントへ引き継がない。クイズの 5 問割り当てとハート減算はクライアントではなく **Supabase RPC** が確定する。有料フレーズ本文は RLS で遮断し、認証・購入検証済みの `/api/phrases` だけが返す。購入権限の付与は **Stripe Webhook のみ**。
 
 ### 技術スタック（実装）
 
@@ -103,23 +103,23 @@
 - **F-3-2: iOS ブロック時**: `NotAllowedError` なら大きな手動再生ボタンを出す。
 - **F-3-3: ファイル欠落時**: 日本語テキストから五声音階トーンを生成してフォールバック再生する。
 
-### ④ 認証・Identity Linking モジュール
+### ④ 認証モジュール
 
-- **F-4-1: 匿名起動**: Supabase 設定済みなら起動時に匿名サインインする。
-- **F-4-2: Google OAuth**: `linkIdentity`（ゲスト継続）または `signInWithOAuth`（既存アカウントへ切替）。
-- **F-4-3: Email Magic Link**: ゲスト継続は `updateUser({ email })`、既存は `signInWithOtp`。
-- **F-4-4: 衝突時マージ禁止**: 他アカウントに紐づく Identity では自動マージせず、既存ログインを案内する。
+- **F-4-1: 匿名起動**: Supabase 設定済みなら起動時に匿名サインインする。サインアウト後も新しい匿名ゲストに戻る。
+- **F-4-2: Google OAuth**: ログインも新規登録も、匿名セッションを `signOut` したあと `signInWithOAuth` する。初回はその Google でアカウントを作り、再訪は同じアカウントに入る。`linkIdentity` でゲストを継続しない。
+- **F-4-3: Email Magic Link**: ログインも新規登録も、匿名を `signOut` したあと `signInWithOtp` する。ゲストへの `updateUser({ email })` は使わない。
+- **F-4-4: ゲスト進捗は引き継がない**: ハートとクイズ履歴はコピーしない。既に使われている Google / Email を選んでもそのアカウントへ入り、衝突画面を正規のログイン経路にしない。
 - **F-4-5: プロファイル同期**: `sync_profile` RPC が `is_anonymous` と `preferred_language` を更新。クライアント UPDATE ポリシーは作らない。
 - **F-4-6: オープンリダイレクト防止**: 認証後 `next` は同一オリジンの相対パスのみ許可。
 - **F-4-7: 自己退会とエクスポート**: 認証済み（匿名含む）が `/account` から JSON エクスポートとアカウント削除できる。削除は確認語 `DELETE` が必要。学習データは CASCADE 削除。`user_purchases` は `user_id` SET NULL で残し `stripe_payment_intent_id` は保持。Stripe Customer は email 検索のうえ `customers.del` を best-effort。
 
 ### ⑤ 課金モジュール（都度購入）
 
-- **F-5-1: 匿名購入禁止**: `is_anonymous` または Google/Email 未連携なら Checkout 403（`identity_linking_required`）→ 連携モーダル。
+- **F-5-1: 匿名購入禁止**: `is_anonymous` または Google/Email 未ログインなら Checkout 403（`identity_linking_required`）→ ログインを求める。
 - **F-5-2: 二重購入防止**: 所有済みなら Checkout 400（「既に購入済みのパックです」）。UI は「学習を始める」に切替。
 - **F-5-3: Webhook のみ付与**: Success ページは権限を書かない。`checkout.session.completed` の署名検証後に `user_purchases` INSERT。UNIQUE で冪等。Success ページは `GET /api/billing/purchase-status` をポーリングして反映を確認し、確認できてから CTA を有効化する。タイムアウト時は再確認と問い合わせ導線を出す。
 - **F-5-4: Customer Portal**: 連携済みユーザーが Stripe 上で領収・支払方法を管理できる。
-- **F-5-5: 保留チェックアウト**: 連携前の pack ID を `{ packId, storedAt }` として query / sessionStorage / localStorage に保持する（TTL 10分）。連携完了後は確認ステップを挟み、続ける場合のみ Checkout へ進む。期限切れ・キャンセル・消費後はストレージを削除する。
+- **F-5-5: 保留チェックアウト**: ログイン前の pack ID を `{ packId, storedAt }` として query / sessionStorage / localStorage に保持する（TTL 10分）。ログイン後は確認ステップを挟み、続ける場合のみ Checkout へ進む。期限切れ・キャンセル・消費後はストレージを削除する。
 
 ### ⑥ 有料フレーズ保護モジュール
 

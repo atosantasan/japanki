@@ -26,4 +26,17 @@ describe("link modal surface", () => {
     expect(snippet).toMatch(/setAuthError\(null\)/);
     expect(snippet).toMatch(/setEmailSent\(false\)/);
   });
+
+  it("offers login and sign-up as the same sign-in, without linking the guest", () => {
+    const source = readFileSync(
+      join(srcDir, "components/auth/AuthBar.tsx"),
+      "utf8",
+    );
+    expect(source).toMatch(/openLinkModal\("login"\)/);
+    expect(source).toMatch(/openLinkModal\("signup"\)/);
+    expect(source).toMatch(/continueWithGoogle\(\)/);
+    expect(source).toMatch(/continueWithEmail\(email\)/);
+    expect(source).not.toMatch(/continueWithGoogle\("link"\)/);
+    expect(source).not.toMatch(/continueWithGoogle\("existing"\)/);
+  });
 });

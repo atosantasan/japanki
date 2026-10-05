@@ -29,6 +29,21 @@ describe("google oauth start surface", () => {
     expect(source).toMatch(/oauthCallbackAuthErrorParam/);
   });
 
+  it("leaves the guest before Google or email sign-in", () => {
+    const source = readFileSync(
+      join(srcDir, "components/auth/AuthProvider.tsx"),
+      "utf8",
+    );
+    expect(source).not.toMatch(/linkIdentity/);
+    expect(source).not.toMatch(/updateUser/);
+    expect(source).toMatch(
+      /await supabase\.auth\.signOut\(\);\s*const \{ data, error \} = await supabase\.auth\.signInWithOAuth/,
+    );
+    expect(source).toMatch(
+      /await supabase\.auth\.signOut\(\);\s*const \{ error \} = await supabase\.auth\.signInWithOtp/,
+    );
+  });
+
   it("shows the returned OAuth error in the link modal", () => {
     const source = readFileSync(
       join(srcDir, "components/auth/AuthProvider.tsx"),
