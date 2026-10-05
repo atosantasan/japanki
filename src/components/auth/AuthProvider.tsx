@@ -12,6 +12,7 @@ import {
 import { useLocale } from "next-intl";
 import { usePathname } from "@/i18n/navigation";
 import { mapAuthError, type MappedAuthError } from "@/lib/auth/identity-errors";
+import { returnedAuthErrorState } from "@/lib/auth/oauth-callback-error";
 import {
   authCallbackUrl,
   persistAuthNextPath,
@@ -94,17 +95,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(configured);
   const [emailSent, setEmailSent] = useState(false);
   const [profile, setProfile] = useState<AuthProfile | null>(null);
-  const [authError, setAuthError] = useState<MappedAuthError | null>(() => {
-    if (typeof window !== "undefined") {
-      const errorParam = new URLSearchParams(window.location.search).get(
-        "authError",
-      );
-      if (errorParam) {
-        return mapAuthError({ message: errorParam });
-      }
-    }
-    return null;
-  });
+  const [authError, setAuthError] = useState<MappedAuthError | null>(null);
   const [linkModalOpen, setLinkModalOpen] = useState(false);
   const [linkModalReason, setLinkModalReason] =
     useState<LinkModalReason>("save");
@@ -262,6 +253,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const cancelPendingCheckout = useCallback(() => {
     setCheckoutConfirmPackId(null);
     clearPendingCheckoutPack();
+  }, []);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const returned = returnedAuthErrorState(params.get("authError"));
+    if (!returned.authError) {
+      return;
+    }
+    const pendingPack = getPendingCheckoutPack(params);
+    params.delete("authError");
+    const query = params.toString();
+    const nextUrl = `${window.location.pathname}${query ? `?${query}` : ""}${window.location.hash}`;
+    window.history.replaceState(window.history.state, "", nextUrl);
+    void Promise.resolve().then(() => {
+      setAuthError(returned.authError);
+      if (!returned.openLinkModal) {
+        return;
+      }
+      setEmailSent(false);
+      if (pendingPack) {
+        setLinkModalReason("checkout");
+        setPendingCheckoutPackId(pendingPack);
+      }
+      setLinkModalOpen(true);
+    });
   }, []);
 
   useEffect(() => {
