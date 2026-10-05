@@ -84,7 +84,7 @@ graph TB
 | 方式 | API | 用途 |
 |---|---|---|
 | Anonymous | `signInAnonymously` | ゲスト学習 |
-| Google | `signInWithOAuth` | ログイン・新規登録・購入。先にゲストを `signOut` する |
+| Google | `signInWithOAuth` | ログイン・購入。先にゲストを `signOut` する |
 | Email | `signInWithOtp` | 同上。ゲストへの `updateUser` は使わない |
 
 コールバックは常に `{origin}/auth/callback`。`next` は Cookie `japanki_auth_next` または query。`safeNextPath` がオープンリダイレクトを防ぐ。
@@ -98,16 +98,16 @@ graph TB
 Checkout Session:
 
 - `client_reference_id`: Supabase user id
-- `metadata.supabase_user_id` / `metadata.pack_id`
-- `success_url`: `/{locale}/success?pack=`
+- `metadata.supabase_user_id` / `metadata.pack_id`（トラベル）。ハート無制限は `metadata.product_id = unlimited_hearts`
+- `success_url`: トラベルは `/{locale}/success?pack=`、ハート無制限は `/{locale}/success?product=unlimited_hearts`
 - `cancel_url`: `/{locale}`
 - 価格: `stripe_price_id` があれば Price、なければ `price_data`（USD cents from `price_usd`）
 
 Webhook は署名検証後に次を処理する。署名失敗は 400。metadata 欠落は 400。Success URL からの購入付与は行わない。
 
-- `checkout.session.completed` / `checkout.session.async_payment_succeeded`: `payment_status === "paid"` のときのみ `grantPurchase`（`stripe_payment_intent_id` を保存）
+- `checkout.session.completed` / `checkout.session.async_payment_succeeded`: `payment_status === "paid"` のときのみ付与する。`product_id` が `unlimited_hearts` なら `user_unlimited_hearts`、それ以外は `pack_id` で `grantPurchase`（`stripe_payment_intent_id` を保存）
 - `payment_status !== "paid"`（非同期決済の unpaid）: 付与せず 200
-- `charge.refunded`: `payment_intent` で `user_purchases` を削除しアクセス権を剥奪
+- `charge.refunded`: `payment_intent` で `user_purchases` と `user_unlimited_hearts` を削除する。消えた行がある方の権限だけ失う
 - その他イベント: 200 で無視
 
 Portal はメールで Customer を 1 件引き、`return_url` を `/{locale}/account` にする。
@@ -180,7 +180,7 @@ graph TD
 
 | 対策 | 実装 | 閾値 |
 |---|---|---|
-| 匿名アカウント掃除 | Vercel Cron（毎日 03:00 UTC）が `GET /api/internal/cleanup-anonymous-users` を呼び、`auth.users` を削除。`profiles` / `quiz_sessions`（questions / attempts / answers）/ `submit_answer_calls` は ON DELETE CASCADE。`user_purchases.user_id` は SET NULL（`012`）。同じ job が 1時間超の `submit_answer_calls` も DELETE | `is_anonymous = true` かつ `created_at` が `ANONYMOUS_RETENTION_DAYS`（30日）以上前、かつ `user_purchases` なし |
+| 匿名アカウント掃除 | Vercel Cron（毎日 03:00 UTC）が `GET /api/internal/cleanup-anonymous-users` を呼び、`auth.users` を削除。`profiles` / `quiz_sessions`（questions / attempts / answers）/ `submit_answer_calls` は ON DELETE CASCADE。`user_purchases.user_id` と `user_unlimited_hearts.user_id` は SET NULL（`012` / `015`）。同じ job が 1時間超の `submit_answer_calls` も DELETE | `is_anonymous = true` かつ `created_at` が `ANONYMOUS_RETENTION_DAYS`（30日）以上前、かつ `user_purchases` も `user_unlimited_hearts` もなし |
 | セッション開始レート制限 | `create_quiz_session` が直近1時間の `quiz_sessions` を COUNT。専用カウンタテーブルは作らない。`idx_quiz_sessions_user_id_created_at` | `QUIZ_START_RATE_LIMIT_PER_HOUR` = 20。超過は `Rate limit exceeded` / HTTP 429 |
 | 回答送信レート制限 | `submit_answer` が直近1時間の `submit_answer_calls` を COUNT（BFF 経由でも RPC 直叩きでも同じ）。`idx_submit_answer_calls_user_id_called_at`。Next.js in-memory limiter は撤去 | `SUBMIT_ANSWER_RATE_LIMIT_PER_HOUR` = 60。超過は `Rate limit exceeded` / HTTP 429 |
 

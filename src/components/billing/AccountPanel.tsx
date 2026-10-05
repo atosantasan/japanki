@@ -38,6 +38,11 @@ export function AccountPanel() {
   const router = useRouter();
   const { profile, loading, openLinkModal, signOut } = useAuth();
   const [purchases, setPurchases] = useState<PurchaseRow[]>([]);
+  const [unlimitedHeartsAt, setUnlimitedHeartsAt] = useState<string | null>(
+    null,
+  );
+  const [hasUnlimitedHeartsPurchase, setHasUnlimitedHeartsPurchase] =
+    useState(false);
   const [loadError, setLoadError] = useState(false);
   const [portalError, setPortalError] = useState<
     "noCustomer" | "error" | null
@@ -59,19 +64,29 @@ export function AccountPanel() {
     void (async () => {
       try {
         const supabase = createBrowserSupabaseClient();
-        const { data, error } = await supabase
-          .from("user_purchases")
-          .select("pack_id, created_at, content_packs(title)")
-          .order("created_at", { ascending: false });
+        const [purchaseResult, unlimitedResult] = await Promise.all([
+          supabase
+            .from("user_purchases")
+            .select("pack_id, created_at, content_packs(title)")
+            .order("created_at", { ascending: false }),
+          supabase
+            .from("user_unlimited_hearts")
+            .select("created_at")
+            .maybeSingle(),
+        ]);
         if (cancelled) {
           return;
         }
-        if (error) {
+        if (purchaseResult.error) {
           setLoadError(true);
           return;
         }
         setLoadError(false);
-        setPurchases((data as PurchaseRow[] | null) ?? []);
+        setPurchases((purchaseResult.data as PurchaseRow[] | null) ?? []);
+        if (!unlimitedResult.error) {
+          setHasUnlimitedHeartsPurchase(Boolean(unlimitedResult.data));
+          setUnlimitedHeartsAt(unlimitedResult.data?.created_at ?? null);
+        }
       } catch {
         if (!cancelled) {
           setLoadError(true);
@@ -196,10 +211,26 @@ export function AccountPanel() {
     <div className="mt-10">
       {loadError ? (
         <p className="text-cream/75">{t("error")}</p>
-      ) : purchases.length === 0 ? (
+      ) : purchases.length === 0 && !hasUnlimitedHeartsPurchase ? (
         <p className="text-lg text-cream/75">{t("empty")}</p>
       ) : (
         <ul className="space-y-4">
+          {hasUnlimitedHeartsPurchase ? (
+            <li className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-cream/15 bg-cream/5 px-5 py-4">
+              <div>
+                <p className="text-lg text-cream">{t("unlimitedHearts")}</p>
+                {unlimitedHeartsAt ? (
+                  <p className="mt-1 text-sm text-cream/55">
+                    {t("purchasedAt", {
+                      date: new Date(unlimitedHeartsAt).toLocaleDateString(
+                        locale,
+                      ),
+                    })}
+                  </p>
+                ) : null}
+              </div>
+            </li>
+          ) : null}
           {purchases.map((row) => (
             <li
               key={row.pack_id}

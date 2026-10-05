@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { Link } from "@/i18n/navigation";
 import { waitForPurchase } from "@/lib/billing/wait-for-purchase";
-import { CONTACT_EMAIL } from "@/lib/constants/app";
+import { CONTACT_EMAIL, UNLIMITED_HEARTS_PRODUCT_ID } from "@/lib/constants/app";
 
 type SuccessPurchaseGateProps = {
   packId: string;
@@ -15,6 +15,8 @@ type GatePhase = "polling" | "confirmed" | "timedOut";
 
 export function SuccessPurchaseGate({ packId }: SuccessPurchaseGateProps) {
   const t = useTranslations("Success");
+  const isUnlimited = packId === UNLIMITED_HEARTS_PRODUCT_ID;
+  const ctaLabel = isUnlimited ? t("unlimitedCta") : t("cta");
   const { refreshProfile } = useAuth();
   const [phase, setPhase] = useState<GatePhase>("polling");
   const [attempt, setAttempt] = useState(0);
@@ -71,10 +73,10 @@ export function SuccessPurchaseGate({ packId }: SuccessPurchaseGateProps) {
       <div className="flex flex-wrap gap-3">
         {phase === "confirmed" ? (
           <Link
-            href={`/quiz/${packId}`}
+            href={isUnlimited ? "/" : `/quiz/${packId}`}
             className="inline-flex w-fit rounded-full bg-cream px-6 py-3 text-sm font-semibold text-ink"
           >
-            {t("cta")}
+            {ctaLabel}
           </Link>
         ) : (
           <button
@@ -83,7 +85,7 @@ export function SuccessPurchaseGate({ packId }: SuccessPurchaseGateProps) {
             onClick={phase === "timedOut" ? runPoll : undefined}
             className="inline-flex w-fit rounded-full bg-cream px-6 py-3 text-sm font-semibold text-ink disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {phase === "timedOut" ? t("retry") : t("cta")}
+            {phase === "timedOut" ? t("retry") : ctaLabel}
           </button>
         )}
         <Link

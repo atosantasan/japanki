@@ -2,6 +2,7 @@ export const APP_NAME = "Japanki";
 export const CONTACT_EMAIL = "japankiadm@gmail.com";
 export const FREE_PACK_ID = "survival";
 export const PAID_PACK_ID = "travel";
+export const UNLIMITED_HEARTS_PRODUCT_ID = "unlimited_hearts";
 
 export const ANONYMOUS_RETENTION_DAYS = 30;
 export const QUIZ_START_RATE_LIMIT_PER_HOUR = 20;

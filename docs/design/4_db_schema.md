@@ -26,6 +26,7 @@
 10. `010_submit_answer_rate_limit.sql` — `submit_answer_calls` と `submit_answer` の 60回/時制限（Issue #17 follow-up）
 11. `011_quiz_session_completion.sql` — `quiz_answers` と割当数一致時の `completed_at` 更新（Issue #15）
 12. `012_gdpr_account_deletion.sql` — `user_purchases.user_id` を NULL 可 + ON DELETE SET NULL、`export_my_data`（Issue #20）
+13. `015_unlimited_hearts.sql` — `billing_products` / `user_unlimited_hearts`。無制限の所有者は開始時のハート判定と減算を飛ばす
 
 ---
 
@@ -287,11 +288,12 @@ UNIQUE (`user_id`, `pack_id`) が Webhook 再送の冪等キー（PostgreSQL は
 2. パックなし、無料で `is_active = false`、または有料・非アクティブで未購入 → `Content pack not found`
 3. 有料かつアクティブで未購入 → `Purchased pack permission required`（有料・非アクティブで購入済みなら例外で作成可）
 4. 直近1時間の同一 `user_id` の `quiz_sessions` が 20 件以上 → `Rate limit exceeded`（`QUIZ_START_RATE_LIMIT_PER_HOUR`）
-5. `profiles` を `FOR UPDATE` し、経過分を 30 分単位で回復（上限 5）。回復後が 0 なら `No hearts remaining`（セッション未作成）
-6. セッション INSERT
-7. `order by random() limit 5` で questions INSERT
-8. 5 問に満たなければ例外（トランザクションロールバック。ハートは減らない）
-9. 5 問確定後に `hearts` を 1 減算し、回復調整済みの `last_heart_updated_at` を書く（Issue #52）
+5. 本人の `user_unlimited_hearts` があるときは、次のハート判定と減算を飛ばしてセッション作成へ進む
+6. 無制限でないとき `profiles` を `FOR UPDATE` し、経過分を 30 分単位で回復（上限 5）。回復後が 0 なら `No hearts remaining`（セッション未作成）
+7. セッション INSERT
+8. `order by random() limit 5` で questions INSERT
+9. 5 問に満たなければ例外（トランザクションロールバック。ハートは減らない）
+10. 無制限でないとき、5 問確定後に `hearts` を 1 減算し、回復調整済みの `last_heart_updated_at` を書く（Issue #52）
 
 ### 5-2. `consume_heart(session_id_param uuid, phrase_id_param uuid)`
 

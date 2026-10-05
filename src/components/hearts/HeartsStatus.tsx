@@ -8,9 +8,11 @@ import { formatCountdown, recoverHearts } from "@/lib/hearts/recovery";
 export function HeartsStatus({
   storedHearts,
   lastHeartUpdatedAt,
+  unlimited = false,
 }: {
   storedHearts: number;
   lastHeartUpdatedAt: string | null;
+  unlimited?: boolean;
 }) {
   const t = useTranslations("Hearts");
   const [now, setNow] = useState(() => Date.now());
@@ -21,6 +23,24 @@ export function HeartsStatus({
     }, 1000);
     return () => window.clearInterval(timer);
   }, []);
+
+  if (unlimited) {
+    return (
+      <div className="flex items-center gap-3" aria-live="polite">
+        <div
+          className="flex items-center gap-2"
+          aria-label={`${t("label")}: ${t("unlimited")}`}
+        >
+          <span className="text-xs uppercase tracking-[0.2em] text-cream/60">
+            {t("label")}
+          </span>
+          <span className="text-sm font-semibold tracking-wide text-sun">
+            {t("unlimited")}
+          </span>
+        </div>
+      </div>
+    );
+  }
 
   const recovered = recoverHearts({
     storedHearts,

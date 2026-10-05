@@ -17,6 +17,7 @@ export type ExportMyDataPayload = {
   };
   profile: unknown;
   purchases: unknown;
+  unlimited_hearts: unknown;
   quiz_sessions: unknown;
 };
 
@@ -56,6 +57,7 @@ export async function exportMyDataForRequest(input: {
       },
       profile: data.profile ?? null,
       purchases: data.purchases ?? [],
+      unlimited_hearts: data.unlimited_hearts ?? [],
       quiz_sessions: data.quiz_sessions ?? [],
     };
 

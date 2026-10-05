@@ -16,12 +16,13 @@ type DeleteClient = {
   };
 };
 
-export async function revokePurchaseByPaymentIntent(
+async function deleteByPaymentIntent(
   admin: DeleteClient,
+  table: "user_purchases" | "user_unlimited_hearts",
   paymentIntentId: string,
-): Promise<RevokePurchaseResult> {
+): Promise<number> {
   const { data, error } = await admin
-    .from("user_purchases")
+    .from(table)
     .delete()
     .eq("stripe_payment_intent_id", paymentIntentId)
     .select("id");
@@ -30,5 +31,23 @@ export async function revokePurchaseByPaymentIntent(
     throw new Error(error.message);
   }
 
-  return data && data.length > 0 ? "revoked" : "not_found";
+  return data?.length ?? 0;
+}
+
+export async function revokePurchaseByPaymentIntent(
+  admin: DeleteClient,
+  paymentIntentId: string,
+): Promise<RevokePurchaseResult> {
+  const purchases = await deleteByPaymentIntent(
+    admin,
+    "user_purchases",
+    paymentIntentId,
+  );
+  const unlimitedHearts = await deleteByPaymentIntent(
+    admin,
+    "user_unlimited_hearts",
+    paymentIntentId,
+  );
+
+  return purchases + unlimitedHearts > 0 ? "revoked" : "not_found";
 }

@@ -35,6 +35,7 @@ export function QuizPlay({ packId }: QuizPlayProps) {
     loading: authLoading,
     updateHearts,
     refreshProfile,
+    hasUnlimitedHearts,
   } = useAuth();
   const [loading, setLoading] = useState(true);
   const [errorKey, setErrorKey] = useState<
@@ -46,6 +47,7 @@ export function QuizPlay({ packId }: QuizPlayProps) {
     | null
   >(configured ? null : "notConfigured");
   const profileRef = useRef(profile);
+  const unlimitedRef = useRef(hasUnlimitedHearts);
   const [queue, setQueue] = useState<PreparedQuestion[]>([]);
   const [index, setIndex] = useState(0);
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -66,7 +68,8 @@ export function QuizPlay({ packId }: QuizPlayProps) {
 
   useEffect(() => {
     profileRef.current = profile;
-  }, [profile]);
+    unlimitedRef.current = hasUnlimitedHearts;
+  }, [profile, hasUnlimitedHearts]);
 
   useEffect(() => {
     if (authLoading) {
@@ -90,7 +93,7 @@ export function QuizPlay({ packId }: QuizPlayProps) {
         storedHearts: currentProfile?.hearts ?? 5,
         lastHeartUpdatedAt: currentProfile?.lastHeartUpdatedAt,
       });
-      if (!canPlayWithHearts(playableHearts)) {
+      if (!unlimitedRef.current && !canPlayWithHearts(playableHearts)) {
         if (!cancelled) {
           setErrorKey("heartsEmpty");
           setLoading(false);
@@ -103,8 +106,14 @@ export function QuizPlay({ packId }: QuizPlayProps) {
         updatedAt: string;
         sessionId: string;
         questions: PreparedQuestion[];
+        unlimitedHearts?: boolean;
       }) => {
-        updateHearts(started.remainingHearts, started.updatedAt);
+        if (started.unlimitedHearts) {
+          unlimitedRef.current = true;
+          void refreshProfile();
+        } else {
+          updateHearts(started.remainingHearts, started.updatedAt);
+        }
         setSessionId(started.sessionId);
         setQueue(started.questions);
         setIndex(0);

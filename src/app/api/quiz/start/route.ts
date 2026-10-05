@@ -89,6 +89,20 @@ async function createStartQuizLoader(
         updatedAt,
       });
     },
+    async hasUnlimitedHearts(userId) {
+      const { data, error } = await adminClient
+        .from("user_unlimited_hearts")
+        .select("user_id")
+        .eq("user_id", userId)
+        .maybeSingle();
+      if (error) {
+        if (error.code === "PGRST205") {
+          return false;
+        }
+        throw error;
+      }
+      return Boolean(data);
+    },
   };
 }
 

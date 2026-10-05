@@ -7,7 +7,7 @@ import { LocaleSwitcher } from "@/components/LocaleSwitcher";
 import { Link } from "@/i18n/navigation";
 
 export function AppHeader() {
-  const { profile } = useAuth();
+  const { profile, hasUnlimitedHearts } = useAuth();
 
   return (
     <header className="relative z-10 flex flex-col gap-4 px-6 py-6 md:px-10">
@@ -27,6 +27,7 @@ export function AppHeader() {
         <HeartsStatus
           storedHearts={profile.hearts}
           lastHeartUpdatedAt={profile.lastHeartUpdatedAt}
+          unlimited={hasUnlimitedHearts}
         />
       ) : null}
     </header>

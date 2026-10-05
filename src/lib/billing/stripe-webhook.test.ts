@@ -145,6 +145,36 @@ describe("handleStripeWebhook", () => {
     expect(grantPurchase).toHaveBeenCalledWith("user-1", "travel", "pi_async");
   });
 
+  it("grants unlimited hearts without granting a pack", async () => {
+    const grantPurchase = vi.fn();
+    const grantUnlimitedHearts = vi.fn().mockResolvedValue("inserted");
+    const result = await handleStripeWebhook({
+      payload: "{}",
+      signature: "good",
+      webhookSecret: "whsec_test",
+      constructEvent: () =>
+        ({
+          type: "checkout.session.completed",
+          data: {
+            object: {
+              payment_status: "paid",
+              payment_intent: "pi_hearts",
+              metadata: {
+                supabase_user_id: "user-1",
+                product_id: "unlimited_hearts",
+              },
+            },
+          },
+        }) as never,
+      grantPurchase,
+      grantUnlimitedHearts,
+    });
+
+    expect(result.status).toBe(200);
+    expect(grantPurchase).not.toHaveBeenCalled();
+    expect(grantUnlimitedHearts).toHaveBeenCalledWith("user-1", "pi_hearts");
+  });
+
   it("revokes access when a charge is refunded", async () => {
     const grantPurchase = vi.fn();
     const revokePurchase = vi.fn().mockResolvedValue("revoked");

@@ -27,12 +27,14 @@ export type StartQuizLoader = {
   ) => Promise<{ phrase_id: string; position: number }[]>;
   loadPhrases: (packId: string) => Promise<unknown[]>;
   getHearts: (userId: string) => Promise<ConsumeHeartResult>;
+  hasUnlimitedHearts?: (userId: string) => Promise<boolean>;
 };
 
 export type StartQuizResult = {
   sessionId: string;
   remainingHearts: number;
   updatedAt: string;
+  unlimitedHearts: boolean;
   questions: PreparedQuestion[];
 };
 
@@ -71,10 +73,11 @@ export async function startQuizForRequest(
   }
 
   try {
-    const [assigned, phraseRows, hearts] = await Promise.all([
+    const [assigned, phraseRows, hearts, unlimitedHearts] = await Promise.all([
       loader.loadAssigned(sessionId),
       loader.loadPhrases(input.packId),
       loader.getHearts(user.id),
+      loader.hasUnlimitedHearts?.(user.id) ?? Promise.resolve(false),
     ]);
 
     const parsed = PublicPhraseRecordSchema.array().safeParse(phraseRows);
@@ -98,6 +101,7 @@ export async function startQuizForRequest(
         sessionId,
         remainingHearts: hearts.remainingHearts,
         updatedAt: hearts.updatedAt,
+        unlimitedHearts,
         questions,
       },
     };
