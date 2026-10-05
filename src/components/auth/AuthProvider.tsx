@@ -13,6 +13,7 @@ import { useLocale } from "next-intl";
 import { usePathname } from "@/i18n/navigation";
 import { mapAuthError, type MappedAuthError } from "@/lib/auth/identity-errors";
 import { returnedAuthErrorState } from "@/lib/auth/oauth-callback-error";
+import { createProfileRefreshEpoch } from "@/lib/auth/profile-refresh-epoch";
 import {
   authCallbackUrl,
   persistAuthNextPath,
@@ -116,17 +117,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [ownedPackIds, setOwnedPackIds] = useState<string[]>([]);
   const autoCheckoutTriggeredRef = useRef(false);
+  const profileRefreshEpochRef = useRef(createProfileRefreshEpoch());
 
   const refreshProfile = useCallback(async () => {
     if (!configured) {
       return null;
     }
+    const epoch = profileRefreshEpochRef.current.capture();
+    const isCurrent = () => profileRefreshEpochRef.current.isCurrent(epoch);
     const supabase = createBrowserSupabaseClient();
     const { data: sessionData } = await supabase.auth.getSession();
+    if (!isCurrent()) {
+      return null;
+    }
     const session = sessionData?.session;
     let user = session?.user;
     if (!user) {
       const { data: userData } = await supabase.auth.getUser();
+      if (!isCurrent()) {
+        return null;
+      }
       user = userData?.user ?? undefined;
     }
     if (!user) {
@@ -135,9 +145,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     const packIds = await fetchUserPacks(supabase);
+    if (!isCurrent()) {
+      return null;
+    }
     setOwnedPackIds(packIds);
 
     const { data } = await syncProfileSafely(supabase, locale);
+    if (!isCurrent()) {
+      return null;
+    }
     if (data && typeof data === "object") {
       const nextProfile = toProfile(data as Record<string, unknown>, locale);
       setProfile(nextProfile);
@@ -333,6 +349,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           await refreshProfile();
         }
       } else if (event === "SIGNED_OUT") {
+        profileRefreshEpochRef.current.invalidate();
         autoCheckoutTriggeredRef.current = false;
         setCheckoutConfirmPackId(null);
         setProfile(null);
@@ -467,6 +484,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     autoCheckoutTriggeredRef.current = false;
     setCheckoutConfirmPackId(null);
+    profileRefreshEpochRef.current.invalidate();
     const supabase = createBrowserSupabaseClient();
     await supabase.auth.signOut();
     await supabase.auth.signInAnonymously();
