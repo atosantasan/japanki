@@ -26,5 +26,15 @@ describe("google oauth start surface", () => {
     );
     expect(source).toMatch(/resolveAuthNextPath/);
     expect(source).toMatch(/AUTH_NEXT_COOKIE/);
+    expect(source).toMatch(/oauthCallbackAuthErrorParam/);
+  });
+
+  it("shows the returned OAuth error in the link modal", () => {
+    const source = readFileSync(
+      join(srcDir, "components/auth/AuthProvider.tsx"),
+      "utf8",
+    );
+    expect(source).toMatch(/returnedAuthErrorState/);
+    expect(source).toMatch(/params\.delete\("authError"\)/);
   });
 });

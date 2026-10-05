@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { oauthCallbackAuthErrorParam } from "@/lib/auth/oauth-callback-error";
 import {
   AUTH_NEXT_COOKIE,
   decodeCookieValue,
@@ -21,7 +22,16 @@ export async function GET(request: NextRequest) {
   );
 
   if (!code) {
-    return redirectWithClearedCookie(new URL(next, url.origin));
+    const target = new URL(next, url.origin);
+    const authError = oauthCallbackAuthErrorParam({
+      error: url.searchParams.get("error"),
+      errorCode: url.searchParams.get("error_code"),
+      errorDescription: url.searchParams.get("error_description"),
+    });
+    if (authError) {
+      target.searchParams.set("authError", authError);
+    }
+    return redirectWithClearedCookie(target);
   }
 
   const supabase = await createServerSupabaseClient();
