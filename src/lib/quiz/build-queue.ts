@@ -5,11 +5,11 @@ export type AssignedQuestion = {
   position: number;
 };
 
-export function buildQuizQueue(input: {
+export function buildQuizQueue<T extends PublicPhraseRecord>(input: {
   packId: string;
   assigned: AssignedQuestion[];
-  phrases: PublicPhraseRecord[];
-}): PublicPhraseRecord[] {
+  phrases: T[];
+}): T[] {
   const uniqueIds = new Set(input.assigned.map((item) => item.phrase_id));
   if (input.assigned.length !== 5 || uniqueIds.size !== 5) {
     throw new Error("A session must contain exactly 5 unique phrases");

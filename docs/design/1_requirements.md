@@ -85,8 +85,8 @@
 - **F-1-1: サーバー確定の 5 問**: クライアントは `create_quiz_session(pack_id)` を呼び、サーバーがパック内から重複なしランダム 5 問を `quiz_session_questions` に確定する（AC-QUIZ-01〜03）。
 - **F-1-2: 不足パックの拒否**: パック内フレーズが 5 未満ならセッションを作らず例外でロールバックする（AC-QUIZ-06）。
 - **F-1-3: 有料パック権限**: 有料パックは `user_purchases` に本人レコードがなければ RPC が例外を返す（AC-QUIZ-07）。
-- **F-1-4: 表示時シャッフルとサーバー採点**: 3 択は表示時にシャッフルする（`shuffleChoiceOrder`）。正誤判定はクライアント比較ではなく、選択テキストを `POST /api/quiz/submit-answer`（または `submit_answer` RPC）に送りサーバー側で行う。`POST /api/quiz/start` と `GET /api/phrases` は `correct_choice_index` / `correctChoiceText` を返さない。
-- **F-1-5: 完了演出**: 5 問終了後に「1-minute complete!」相当の完了画面を出す。`submit_answer` が割当済みの `quiz_session_questions` 件数と `quiz_answers` 件数が一致したとき `quiz_sessions.completed_at` を now() で更新する（Issue #15 / `011`）。正誤は `quiz_answers` に残る。ハート消費は完了判定とは別で、開始成功時の1回だけ（Issue #52）。
+- **F-1-4: 表示時シャッフルと即時採点**: 3 択は表示時にシャッフルする（`shuffleChoices`）。`POST /api/quiz/start` は出題5問それぞれの `correctChoiceText` を返し、クライアントはその場で正誤を出す。`correct_choice_index` は返さない。`GET /api/phrases` は正解を返さない。プレイ中の1問ごとに採点APIを待たない。
+- **F-1-5: 完了演出**: 5 問終了後に「1-minute complete!」相当の完了画面を出す。完了はクライアントが5問進んだことで出す。プレイ中は `submit_answer` を呼ばず、1問ごとの `quiz_answers` 記録や `completed_at` 更新を待たない。ハート消費は開始成功時の1回だけ（Issue #52）。
 
 ### ② ハートモジュール
 
