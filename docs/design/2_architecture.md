@@ -135,7 +135,7 @@ graph LR
 
 1. 教材の正本は DB。UI は `messages/*.json`。
 2. 5 問の集合は RPC が INSERT した `quiz_session_questions` が正。クライアントは並べ替えて表示するだけ。
-3. 正誤判定の正は `submit_answer`。ハート減算の正は `create_quiz_session` の開始成功時1回。UI の `recoverHearts` は表示用。
+3. 正誤判定は開始レスポンスの `correctChoiceText` をクライアントで比較する。ハート減算の正は `create_quiz_session` の開始成功時1回。UI の `recoverHearts` は表示用。
 4. 購入の正は Webhook → `grantPurchase`。Success URL は案内のみ。
 
 ---

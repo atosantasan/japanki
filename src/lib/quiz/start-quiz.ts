@@ -7,7 +7,7 @@ import { buildQuizQueue } from "@/lib/quiz/build-queue";
 import { prepareQuestion, type PreparedQuestion } from "@/lib/quiz/prepare-question";
 import type { ConsumeHeartResult } from "@/lib/quiz/rpc-client";
 import { SUPPORTED_LOCALES, type SupportedLocale } from "@/lib/i18n/locales";
-import { PublicPhraseRecordSchema } from "@/lib/validation/translation-schema";
+import { PhraseRecordSchema } from "@/lib/validation/translation-schema";
 
 export const StartQuizBodySchema = z.object({
   packId: z.string().min(1),
@@ -80,7 +80,7 @@ export async function startQuizForRequest(
       loader.hasUnlimitedHearts?.(user.id) ?? Promise.resolve(false),
     ]);
 
-    const parsed = PublicPhraseRecordSchema.array().safeParse(phraseRows);
+    const parsed = PhraseRecordSchema.array().safeParse(phraseRows);
     if (!parsed.success) {
       console.error("Phrase payload failed Zod validation");
       return { status: 500, body: { error: "Invalid phrase data" } };

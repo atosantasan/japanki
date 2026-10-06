@@ -166,7 +166,7 @@ describe("startQuizForRequest", () => {
     expect(result.body.sessionId).toBe("sess-1");
     expect(result.body.questions).toHaveLength(5);
     expect(result.body.questions[0]?.choices).toHaveLength(3);
-    expect(result.body.questions[0]).not.toHaveProperty("correctChoiceText");
+    expect(result.body.questions[0]?.correctChoiceText).toBe("Yes");
     expect(result.body.questions[0]).not.toHaveProperty("prompt");
     expect(result.body.questions[0]?.phrase).not.toHaveProperty(
       "correct_choice_index",
@@ -176,7 +176,7 @@ describe("startQuizForRequest", () => {
       "choices_by_lang",
     );
     expect(JSON.stringify(result.body)).not.toContain("correct_choice_index");
-    expect(JSON.stringify(result.body)).not.toContain("correctChoiceText");
+    expect(JSON.stringify(result.body)).toContain("correctChoiceText");
     expect(JSON.stringify(result.body)).not.toContain("correctChoiceIndex");
     expect(result.body.unlimitedHearts).toBe(false);
   });
@@ -223,8 +223,19 @@ describe("quiz start API", () => {
     );
     expect(source).toMatch(/Promise\.all\(/);
     expect(source).toMatch(/createSession/);
+    expect(source).toMatch(/PhraseRecordSchema/);
     expect(source).not.toMatch(/gradeSelectedChoice/);
-    expect(source).not.toMatch(/correctChoiceText/);
+  });
+
+  it("loads correct_choice_index so the start payload can name the answer", () => {
+    const source = readFileSync(
+      join(
+        dirname(fileURLToPath(import.meta.url)),
+        "../../app/api/quiz/start/route.ts",
+      ),
+      "utf8",
+    );
+    expect(source).toMatch(/correct_choice_index/);
   });
 });
 

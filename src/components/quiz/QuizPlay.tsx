@@ -5,7 +5,6 @@ import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { requestStartQuiz } from "@/lib/quiz/start-quiz-client";
-import { requestSubmitAnswer } from "@/lib/quiz/submit-answer-client";
 import {
   playHtmlAudio,
   playPhraseAudio,
@@ -14,10 +13,7 @@ import {
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { canPlayWithHearts, recoveredHeartCount } from "@/lib/hearts/recovery";
 import type { SupportedLocale } from "@/lib/i18n/locales";
-import {
-  INVALID_CHOICE_ERROR,
-  NO_HEARTS_REMAINING_ERROR,
-} from "@/lib/constants/app";
+import { NO_HEARTS_REMAINING_ERROR } from "@/lib/constants/app";
 import type { PreparedQuestion } from "@/lib/quiz/prepare-question";
 
 type QuizPlayProps = {
@@ -43,25 +39,18 @@ export function QuizPlay({ packId }: QuizPlayProps) {
     | "paidLocked"
     | "startError"
     | "heartsEmpty"
-    | "invalidChoice"
     | null
   >(configured ? null : "notConfigured");
   const profileRef = useRef(profile);
   const unlimitedRef = useRef(hasUnlimitedHearts);
   const [queue, setQueue] = useState<PreparedQuestion[]>([]);
   const [index, setIndex] = useState(0);
-  const [sessionId, setSessionId] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<Feedback>(null);
-  const [submitError, setSubmitError] = useState(false);
-  const [revealedCorrectText, setRevealedCorrectText] = useState<string | null>(
-    null,
-  );
   const [needsManualPlay, setNeedsManualPlay] = useState(false);
   const [usedFallback, setUsedFallback] = useState(false);
   const [trackedAudioId, setTrackedAudioId] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const submittingRef = useRef(false);
+  const answeredRef = useRef(false);
 
   const current = queue[index];
   const complete = !loading && !errorKey && queue.length === 5 && index >= 5;
@@ -114,7 +103,6 @@ export function QuizPlay({ packId }: QuizPlayProps) {
         } else {
           updateHearts(started.remainingHearts, started.updatedAt);
         }
-        setSessionId(started.sessionId);
         setQueue(started.questions);
         setIndex(0);
         setFeedback(null);
@@ -202,52 +190,23 @@ export function QuizPlay({ packId }: QuizPlayProps) {
 
   const onChoose = useCallback(
     (selectedIndex: number) => {
-      if (
-        !current ||
-        !sessionId ||
-        feedback ||
-        submittingRef.current
-      ) {
+      if (!current || feedback || answeredRef.current) {
         return;
       }
       const selectedText = current.choices[selectedIndex];
       if (!selectedText) {
         return;
       }
-      submittingRef.current = true;
-      setSubmitting(true);
-      setSubmitError(false);
-      void (async () => {
-        try {
-          const result = await requestSubmitAnswer({
-            sessionId,
-            phraseId: current.phrase.id,
-            selectedChoiceText: selectedText,
-            locale,
-          });
-          setFeedback(result.isCorrect ? "correct" : "incorrect");
-          setRevealedCorrectText(result.correctChoiceText);
-          updateHearts(result.remainingHearts, result.updatedAt);
-        } catch (error) {
-          const message = error instanceof Error ? error.message : "";
-          if (message.includes(INVALID_CHOICE_ERROR)) {
-            setErrorKey("invalidChoice");
-          } else {
-            setSubmitError(true);
-          }
-          submittingRef.current = false;
-          setSubmitting(false);
-        }
-      })();
+      answeredRef.current = true;
+      const isCorrect = selectedText === current.correctChoiceText;
+      setFeedback(isCorrect ? "correct" : "incorrect");
     },
-    [current, feedback, locale, sessionId, updateHearts],
+    [current, feedback],
   );
 
   const goNext = useCallback(() => {
-    submittingRef.current = false;
-    setSubmitting(false);
+    answeredRef.current = false;
     setFeedback(null);
-    setRevealedCorrectText(null);
     setIndex((value) => value + 1);
   }, []);
 
@@ -268,15 +227,6 @@ export function QuizPlay({ packId }: QuizPlayProps) {
           {status}
           {errorKey === "paidLocked" ? (
             <p className="mt-4 text-sm text-cream/65">{t("paidLockedHint")}</p>
-          ) : null}
-          {errorKey === "invalidChoice" ? (
-            <button
-              type="button"
-              onClick={() => window.location.reload()}
-              className="mt-8 inline-flex rounded-full bg-cream px-6 py-3 text-sm font-semibold text-ink"
-            >
-              {t("reloadQuiz")}
-            </button>
           ) : null}
           <div className="mt-8">
             <Link className="text-sm underline decoration-cream/30" href="/">
@@ -328,27 +278,20 @@ export function QuizPlay({ packId }: QuizPlayProps) {
               </button>
             </div>
           ) : null}
-          {submitError ? (
-            <p className="mt-6 text-sm text-sun">{t("gradeError")}</p>
-          ) : null}
           <div className="mt-8 grid gap-3">
             {current.choices.map((choice, choiceIndex) => {
               const selected =
-                Boolean(feedback) && choice === revealedCorrectText;
+                Boolean(feedback) && choice === current.correctChoiceText;
               return (
                 <button
                   key={choice}
                   type="button"
-                  disabled={
-                    Boolean(feedback) || submitting
-                  }
-                  onClick={() => void onChoose(choiceIndex)}
+                  disabled={Boolean(feedback)}
+                  onClick={() => onChoose(choiceIndex)}
                   className={`rounded-2xl border px-5 py-4 text-left text-lg transition ${
                     selected
                       ? "border-sun bg-sun/20 text-cream"
-                      : submitting && !feedback
-                        ? "border-cream/10 bg-cream/5 text-cream/45"
-                        : "border-cream/15 bg-cream/5 text-cream hover:border-cream/40"
+                      : "border-cream/15 bg-cream/5 text-cream hover:border-cream/40"
                   }`}
                 >
                   {choice}

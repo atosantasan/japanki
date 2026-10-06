@@ -19,9 +19,7 @@ describe("QuizPlay hearts empty warning", () => {
   });
 
   it("keeps answer buttons enabled after the session heart is spent", () => {
-    expect(source).toMatch(
-      /disabled=\{\s*Boolean\(feedback\) \|\| submitting\s*\}/,
-    );
+    expect(source).toMatch(/disabled=\{Boolean\(feedback\)\}/);
     expect(source).not.toMatch(/!canPlayWithHearts\(hearts\)/);
   });
 
@@ -32,32 +30,17 @@ describe("QuizPlay hearts empty warning", () => {
     );
   });
 
-  it("surfaces submitAnswer failures instead of swallowing them", () => {
-    expect(source).toMatch(/submitError/);
-    expect(source).toMatch(/catch/);
-    expect(source).toMatch(/requestSubmitAnswer/);
-    expect(source).toMatch(/gradeError/);
-  });
-
-  it("shows a recoverable invalidChoice screen instead of crashing", () => {
-    expect(source).toMatch(/invalidChoice/);
-    expect(source).toMatch(/INVALID_CHOICE_ERROR/);
-    expect(source).toMatch(/reloadQuiz/);
-    expect(source).toMatch(/window\.location\.reload/);
-  });
-
-  it("grades from submit-answer instead of a local correctChoiceText compare", () => {
+  it("grades on the client before any server round trip", () => {
     const choose = source.slice(
       source.indexOf("onChoose"),
       source.indexOf("goNext"),
     );
-    expect(choose).toMatch(/await requestSubmitAnswer/);
-    expect(choose).toMatch(/result\.isCorrect/);
-    expect(choose).toMatch(/result\.correctChoiceText/);
-    expect(choose).not.toMatch(/current\.correctChoiceText/);
-    expect(choose).not.toMatch(/selectedText ===/);
-    expect(choose.match(/requestSubmitAnswer/g)).toHaveLength(1);
-    expect(choose.indexOf("await requestSubmitAnswer")).toBeLessThan(
+    expect(choose).toMatch(/current\.correctChoiceText/);
+    expect(choose).toMatch(/selectedText === current\.correctChoiceText/);
+    expect(choose).not.toMatch(/requestSubmitAnswer/);
+    expect(choose).not.toMatch(/await /);
+    expect(choose.indexOf("setFeedback")).toBeGreaterThan(-1);
+    expect(choose.indexOf("selectedText === current.correctChoiceText")).toBeLessThan(
       choose.indexOf("setFeedback"),
     );
   });
