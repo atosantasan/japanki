@@ -14,7 +14,7 @@ export function AppHeader() {
       <div className="flex items-center justify-between">
         <Link
           href="/"
-          className="font-[family-name:var(--font-noto-sans-jp)] text-sm tracking-[0.35em] text-cream/70 hover:text-cream"
+          className="font-[family-name:var(--font-noto-sans-jp)] text-sm text-cream/70 outline-none hover:text-cream focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-cream"
         >
           音で覚える
         </Link>

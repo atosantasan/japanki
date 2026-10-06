@@ -5,7 +5,7 @@
   },
   "HomePage": {
     "title": "Japanki",
-    "tagline": "Une minute. Cinq questions. Le japonais à l'oreille.",
+    "tagline": "Une minute. Cinq questions.\nLe japonais à l'oreille.",
     "sessionHint": "1 session = 5 questions ≈ 1 minute",
     "cta": "Commencer",
     "contact": "Contact",

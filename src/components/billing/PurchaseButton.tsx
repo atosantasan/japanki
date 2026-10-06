@@ -7,6 +7,9 @@ import { Link } from "@/i18n/navigation";
 import { isPackOwned } from "@/lib/billing/user-packs";
 import { UNLIMITED_HEARTS_PRODUCT_ID } from "@/lib/constants/app";
 
+const textActionClass =
+  "text-left text-base font-medium text-cream/80 underline decoration-cream/25 underline-offset-[0.3em] outline-none hover:text-cream focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-cream disabled:cursor-not-allowed disabled:opacity-50";
+
 export function PurchaseButton({ packId }: { packId: string }) {
   const tHome = useTranslations("HomePage");
   const tAuth = useTranslations("Auth");
@@ -89,7 +92,7 @@ export function PurchaseButton({ packId }: { packId: string }) {
     return (
       <Link
         href={`/quiz/${packId}`}
-        className="inline-flex w-fit items-center rounded-full border border-cream/30 px-6 py-3 text-sm font-semibold tracking-wide text-cream hover:border-cream/60"
+        className={textActionClass}
       >
         {tHome("playOwned")}
       </Link>
@@ -102,12 +105,12 @@ export function PurchaseButton({ packId }: { packId: string }) {
         type="button"
         disabled={isBusy}
         onClick={() => void startCheckout()}
-        className="inline-flex w-fit items-center rounded-full border border-cream/30 px-6 py-3 text-sm font-semibold tracking-wide text-cream hover:border-cream/60 disabled:cursor-not-allowed disabled:opacity-60"
+        className={textActionClass}
       >
         {isBusy ? tAuth("checkoutRedirecting") : tHome("buyTravel")}
       </button>
       {checkoutError ? (
-        <p className="text-xs text-sun" role="alert">
+        <p className="max-w-sm text-sm leading-relaxed text-cream/80" role="alert">
           {checkoutErrorMessage(checkoutError)}
         </p>
       ) : null}
@@ -183,7 +186,7 @@ export function UnlimitedHeartsButton() {
 
   if (hasUnlimitedHearts) {
     return (
-      <p className="inline-flex w-fit items-center rounded-full border border-sun/40 px-6 py-3 text-sm font-semibold tracking-wide text-sun">
+      <p className="text-base text-cream/70">
         {tHome("unlimitedOwned")}
       </p>
     );
@@ -195,12 +198,12 @@ export function UnlimitedHeartsButton() {
         type="button"
         disabled={isBusy}
         onClick={() => void startCheckout()}
-        className="inline-flex w-fit items-center rounded-full border border-cream/30 px-6 py-3 text-sm font-semibold tracking-wide text-cream hover:border-cream/60 disabled:cursor-not-allowed disabled:opacity-60"
+        className={textActionClass}
       >
         {isBusy ? tAuth("checkoutRedirecting") : tHome("buyUnlimitedHearts")}
       </button>
       {checkoutError ? (
-        <p className="text-xs text-sun" role="alert">
+        <p className="max-w-sm text-sm leading-relaxed text-cream/80" role="alert">
           {checkoutError === "already_purchased" ||
           checkoutError === "既に購入済みのパックです"
             ? tAuth("alreadyPurchased")

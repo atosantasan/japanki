@@ -33,41 +33,29 @@ export default async function HomePage({ params }: HomePageProps) {
   const t = await getTranslations("HomePage");
 
   return (
-    <div className="relative flex min-h-full flex-1 flex-col overflow-hidden">
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute -top-24 right-[-4rem] h-72 w-72 rounded-full bg-sun/90 blur-[2px]"
-      />
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute top-16 right-10 h-40 w-40 rounded-full bg-ember/80"
-      />
+    <div className="flex min-h-dvh flex-col">
       <AppHeader />
-      <main className="relative z-10 mx-auto flex w-full max-w-3xl flex-1 flex-col justify-center px-6 pb-16 pt-8 md:px-10">
-        <p className="mb-6 text-sm uppercase tracking-[0.28em] text-sun">
-          {t("sessionHint")}
-        </p>
-        <h1 className="font-[family-name:var(--font-outfit)] text-6xl font-semibold tracking-tight text-cream md:text-8xl">
-          {t("title")}
-        </h1>
-        <p className="mt-6 max-w-xl text-xl leading-relaxed text-cream/80 md:text-2xl">
+      <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col justify-center px-6 py-16 md:px-10">
+        <h1 className="max-w-xl whitespace-pre-line font-[family-name:var(--font-noto-sans-jp)] text-4xl font-medium leading-tight text-cream md:text-5xl">
           {t("tagline")}
-        </p>
-        <div className="mt-10 flex flex-wrap items-center gap-3">
+        </h1>
+        <div className="mt-10 flex flex-col items-start gap-5">
           <Link
             href={`/quiz/${FREE_PACK_ID}`}
-            className="inline-flex w-fit items-center rounded-full bg-cream px-6 py-3 text-sm font-semibold tracking-wide text-ink"
+            className="inline-flex rounded-2xl bg-cream px-6 py-3.5 text-base font-medium text-ink outline-none hover:bg-cream/90 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-cream"
           >
             {t("cta")}
           </Link>
-          <Link
-            href={`/quiz/${PAID_PACK_ID}`}
-            className="inline-flex w-fit items-center rounded-full border border-cream/20 px-6 py-3 text-sm font-semibold tracking-wide text-cream"
-          >
-            {t("travelCta")}
-          </Link>
-          <PurchaseButton packId={PAID_PACK_ID} />
-          <UnlimitedHeartsButton />
+          <div className="flex flex-col items-start gap-3">
+            <Link
+              href={`/quiz/${PAID_PACK_ID}`}
+              className="text-base text-cream/75 underline decoration-cream/25 underline-offset-[0.3em] outline-none hover:text-cream focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-cream"
+            >
+              {t("travelCta")}
+            </Link>
+            <PurchaseButton packId={PAID_PACK_ID} />
+            <UnlimitedHeartsButton />
+          </div>
         </div>
       </main>
       <SiteFooter />
