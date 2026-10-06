@@ -31,10 +31,10 @@ export function HeartsStatus({
           className="flex items-center gap-2"
           aria-label={`${t("label")}: ${t("unlimited")}`}
         >
-          <span className="text-xs uppercase tracking-[0.2em] text-cream/60">
+          <span className="text-sm text-cream/60">
             {t("label")}
           </span>
-          <span className="text-sm font-semibold tracking-wide text-sun">
+          <span className="text-sm font-medium text-cream">
             {t("unlimited")}
           </span>
         </div>
@@ -56,7 +56,7 @@ export function HeartsStatus({
         className="flex items-center gap-2"
         aria-label={`${t("label")}: ${recovered.hearts}`}
       >
-        <span className="text-xs uppercase tracking-[0.2em] text-cream/60">
+        <span className="text-sm text-cream/60">
           {t("label")}
         </span>
         <div className="flex gap-1">
@@ -72,7 +72,7 @@ export function HeartsStatus({
           ))}
         </div>
       </div>
-      <p className="text-xs tracking-wide text-cream/55">
+      <p className="text-sm text-cream/55">
         {recovered.msUntilNext === null
           ? t("full")
           : t("nextIn", { time: formatCountdown(recovered.msUntilNext) })}

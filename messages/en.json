@@ -5,7 +5,7 @@
   },
   "HomePage": {
     "title": "Japanki",
-    "tagline": "One minute. Five questions. Learn Japanese by ear.",
+    "tagline": "One minute. Five questions.\nLearn Japanese by ear.",
     "sessionHint": "1 session = 5 questions ≈ 1 minute",
     "cta": "Start learning",
     "contact": "Contact",

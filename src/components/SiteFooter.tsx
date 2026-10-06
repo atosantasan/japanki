@@ -7,7 +7,7 @@ export async function SiteFooter() {
   const home = await getTranslations("HomePage");
 
   return (
-    <footer className="relative z-10 mt-auto border-t border-cream/10 px-6 py-8 text-sm text-cream/60 md:px-10">
+    <footer className="relative z-10 mt-auto px-6 py-10 text-sm text-cream/55 md:px-10">
       <nav className="flex flex-wrap gap-x-5 gap-y-2">
         <Link
           className="underline decoration-cream/25 underline-offset-4 hover:text-cream"
